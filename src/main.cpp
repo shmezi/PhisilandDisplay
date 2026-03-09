@@ -180,13 +180,13 @@ void setup() {
 
     delay(1000);
     //
-    // if (detectInversionRequirement()) {
-    //     Serial.println("Chip XXRS69 detected. Inverting colors...");
-    //     tft.invertDisplay(true);
-    // } else {
-    //     Serial.println("Chip XH-32S detected. Standard colors applied.");
-    //     tft.invertDisplay(false);
-    // }
+    if (detectInversionRequirement()) {
+        Serial.println("Chip XXRS69 detected. Inverting colors...");
+        tft.invertDisplay(true);
+    } else {
+        Serial.println("Chip XH-32S detected. Standard colors applied.");
+        tft.invertDisplay(false);
+    }
 
 
     //Initialize the XPT2046 input device driver

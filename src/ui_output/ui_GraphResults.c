@@ -108,6 +108,7 @@ lv_obj_set_height( ui_Image9, LV_SIZE_CONTENT);   /// 24
 lv_obj_set_x( ui_Image9, -8 );
 lv_obj_set_y( ui_Image9, -8 );
 lv_obj_set_align( ui_Image9, LV_ALIGN_BOTTOM_RIGHT );
+lv_obj_set_ext_click_area(ui_Image9, 15);
 lv_obj_add_flag( ui_Image9, LV_OBJ_FLAG_CLICKABLE );   /// Flags
 lv_obj_remove_flag( ui_Image9, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
