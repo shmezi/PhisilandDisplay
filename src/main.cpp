@@ -10,7 +10,7 @@
  *
  */
 #include <lvgl.h>
-
+#include "esp_wifi.h"
 #include <TFT_eSPI.h>
 
 #include <XPT2046_Touchscreen.h>
@@ -18,33 +18,34 @@
 #include "ui_output/ui.h"
 #include <Arduino.h>
 #include <WiFi.h>
-
-
+#include <set>
+#include "SD.h"
+#include "SPI.h"
 // Replace with your desired network credentials
-const char* woodshop_words[] = {
+const char *woodshop_words[] = {
     "Maple", "Haven", "Willow", "Corner", "Garden",
     "Meadow", "Porch", "Valley", "Street", "Breezy",
     "Cottage", "Spring", "Summer", "Autumn", "Winter",
     "Sunny", "Shadow", "River", "Forest", "Little",
     "Happy", "Silver", "Golden", "Steady", "Comfy",
     "Simple", "Secret", "Bright", "Grassy", "Hollow"
-  };
+};
 
-const char* connection_words[] = {
+const char *connection_words[] = {
     "House", "Point", "Space", "Cloud", "Logic",
     "Signal", "Stream", "Pocket", "System", "Station",
     "Center", "Bridge", "Studio", "Office", "Planet",
     "Circle", "Square", "Object", "Module", "Vector",
     "Matrix", "Access", "Portal", "Server", "Remote",
     "Screen", "Device", "Master", "Helper", "Router"
-  };
+};
 // Pick a random index (0 to 29)
 int rand1 = random(0, 30);
 int rand2 = random(0, 30);
-
+String ssid = "Dovetail";
 // Combine them into a cute SSID string
-String ssid = "Dovetail-" + String(woodshop_words[rand1]) + "-" + String(connection_words[rand2]);
-const char* password = "Phisiland"; // WPA2 is recommended for security
+// String ssid = "Dovetail-" + String(woodshop_words[rand1]) + "-" + String(connection_words[rand2]);
+const char *password = "Phisiland"; // WPA2 is recommended for security
 WiFiServer server(80); // Set web server port number to 80
 
 // A library for interfacing with the touch screen
@@ -177,23 +178,80 @@ bool detectInversionRequirement() {
     return chip_info.revision == 1;
 }
 
+std::set<String> allowedMacs;
+
+void whitelisted() {
+    while (!Serial); // Wait for Serial Monitor to open
+
+    Serial.println("Initializing SD card...");
+
+    if (!SD.begin(5)) {
+        // Initialize the SD card module
+        Serial.println("Card failed, or not present");
+        // Don't do anything more if the card fails to initialize
+        while (true);
+    }
+    Serial.println("Card initialized.");
+
+    // Open the file for reading
+    File dataFile = SD.open("/allowed-mac.txt");
+
+    // If the file is available, read from it line by line
+    if (dataFile) {
+        Serial.println("\nReading from test.txt:");
+        // Read lines until the end of the file is reached
+
+        while (dataFile.available()) {
+            // Use readStringUntil() to read the current line until a newline character ('\\n')
+            String line = dataFile.readStringUntil('\n');
+            allowedMacs.insert(line);
+            Serial.println(line); // Print the line to the Serial Monitor
+        }
+        // Close the file after reading is complete
+        dataFile.close();
+    } else {
+        // If the file didn't open, print an error message
+        Serial.println("Error opening test.txt");
+    }
+}
+void kickUser(uint8_t aid) {
+    // Sends a deauthentication frame to the specific device
+    esp_err_t err = esp_wifi_deauth_sta(aid);
+
+    if (err == ESP_OK) {
+        Serial.println("Deauthentication packet sent successfully.");
+    } else {
+        Serial.printf("Error kicking user: %s\n", esp_err_to_name(err));
+    }
+}
+
 void wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     switch (event) {
-        case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
+        case ARDUINO_EVENT_WIFI_AP_STACONNECTED: {
+            char macStr[18]; // Buffer to hold "XX:XX:XX:XX:XX:XX"
+            uint8_t *mac = info.wifi_ap_staconnected.mac;
+            uint16_t aid = info.wifi_ap_staconnected.aid;
+            // Properly format the MAC address into a human-readable Hex string
+            sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
+                    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
             Serial.print("New client connected. MAC: ");
-            for (int i = 0; i < 6; i++) {
-                Serial.printf("%02X", info.wifi_ap_staconnected.mac[i]);
-                if (i < 5) Serial.print(":");
+            Serial.println(macStr);
+
+            if (allowedMacs.count(macStr) <= 0) {
+                Serial.println("Target device detected!");
+                // WiFi.softAPdisconnect(false);
+                kickUser(aid);
             }
-            Serial.println();
             break;
+        }
 
-
-        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP: {
             // For the ESP32's own MAC when it gets an IP
             Serial.print("ESP32 Station MAC: ");
             Serial.println(WiFi.macAddress());
             break;
+        }
     }
 }
 
@@ -207,6 +265,7 @@ void setup() {
     String LVGL_Arduino = "LVGL demo ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
     Serial.begin(115200);
+    whitelisted();
     Serial.println(LVGL_Arduino);
     Serial.setTimeout(20); // short timeout for safety
 
