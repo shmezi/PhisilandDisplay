@@ -16,6 +16,36 @@
 #include <XPT2046_Touchscreen.h>
 
 #include "ui_output/ui.h"
+#include <Arduino.h>
+#include <WiFi.h>
+
+
+// Replace with your desired network credentials
+const char* woodshop_words[] = {
+    "Maple", "Haven", "Willow", "Corner", "Garden",
+    "Meadow", "Porch", "Valley", "Street", "Breezy",
+    "Cottage", "Spring", "Summer", "Autumn", "Winter",
+    "Sunny", "Shadow", "River", "Forest", "Little",
+    "Happy", "Silver", "Golden", "Steady", "Comfy",
+    "Simple", "Secret", "Bright", "Grassy", "Hollow"
+  };
+
+const char* connection_words[] = {
+    "House", "Point", "Space", "Cloud", "Logic",
+    "Signal", "Stream", "Pocket", "System", "Station",
+    "Center", "Bridge", "Studio", "Office", "Planet",
+    "Circle", "Square", "Object", "Module", "Vector",
+    "Matrix", "Access", "Portal", "Server", "Remote",
+    "Screen", "Device", "Master", "Helper", "Router"
+  };
+// Pick a random index (0 to 29)
+int rand1 = random(0, 30);
+int rand2 = random(0, 30);
+
+// Combine them into a cute SSID string
+String ssid = "Dovetail-" + String(woodshop_words[rand1]) + "-" + String(connection_words[rand2]);
+const char* password = "Phisiland"; // WPA2 is recommended for security
+WiFiServer server(80); // Set web server port number to 80
 
 // A library for interfacing with the touch screen
 //
@@ -147,8 +177,32 @@ bool detectInversionRequirement() {
     return chip_info.revision == 1;
 }
 
+void wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
+    switch (event) {
+        case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
+            Serial.print("New client connected. MAC: ");
+            for (int i = 0; i < 6; i++) {
+                Serial.printf("%02X", info.wifi_ap_staconnected.mac[i]);
+                if (i < 5) Serial.print(":");
+            }
+            Serial.println();
+            break;
+
+
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+            // For the ESP32's own MAC when it gets an IP
+            Serial.print("ESP32 Station MAC: ");
+            Serial.println(WiFi.macAddress());
+            break;
+    }
+}
+
 
 void setup() {
+    WiFi.softAP(ssid, password);
+    WiFi.onEvent(wifiEvent);
+
+    // IPAddress IP = WiFi.softAPIP();
     //Some basic info on the Serial console
     String LVGL_Arduino = "LVGL demo ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
