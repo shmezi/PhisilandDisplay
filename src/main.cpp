@@ -14,7 +14,8 @@
 #include <TFT_eSPI.h>
 
 #include <XPT2046_Touchscreen.h>
-
+#include <WiFi.h>
+#include <WebServer.h>
 #include "ui_output/ui.h"
 #include <Arduino.h>
 #include <WiFi.h>
@@ -42,11 +43,10 @@ const char *connection_words[] = {
 // Pick a random index (0 to 29)
 int rand1 = random(0, 30);
 int rand2 = random(0, 30);
-String ssid = "Dovetail";
-// Combine them into a cute SSID string
-// String ssid = "Dovetail-" + String(woodshop_words[rand1]) + "-" + String(connection_words[rand2]);
+
+String ssid = "Dovetail-" + String(woodshop_words[rand1]) + "-" + String(connection_words[rand2]);
 const char *password = "Phisiland"; // WPA2 is recommended for security
-WiFiServer server(80); // Set web server port number to 80
+WebServer server(80); // Set web server port number to 80
 
 // A library for interfacing with the touch screen
 //
@@ -134,7 +134,6 @@ void onStartButton(lv_event_t *e) {
         case 1:
             Serial.print("~-2");
             break;
-
         case 2:
             Serial.print(String("~") + String(lv_arc_get_value(ui_SpeedControl1)));
             break;
@@ -178,14 +177,37 @@ bool detectInversionRequirement() {
     return chip_info.revision == 1;
 }
 
-std::set<String> allowedMacs;
+String readCodeFileToString(const String &path) {
+    File file = SD.open("/" + path + ".ezra");
 
-void whitelisted() {
+
+    if (!file) {
+        Serial.println("Failed to open " + path + " script.");
+        return ""; // Return an empty string in case of an error
+    }
+
+    String fileContent = "";
+
+    // Read until there are no more characters available
+    while (file.available()) {
+        char charRead = file.read(); // Read a character
+        fileContent += charRead; // Append the character to the String
+    }
+
+    // Close the file
+    file.close();
+
+    return fileContent;
+}
+
+std::set<String> allowedMacs;
+String codebase[4];
+void initValuesFromSD() {
     while (!Serial); // Wait for Serial Monitor to open
 
     Serial.println("Initializing SD card...");
 
-    if (!SD.begin(5)) {
+    if (!SD.begin(5, SPI, 4000000)) {
         // Initialize the SD card module
         Serial.println("Card failed, or not present");
         // Don't do anything more if the card fails to initialize
@@ -213,7 +235,13 @@ void whitelisted() {
         // If the file didn't open, print an error message
         Serial.println("Error opening test.txt");
     }
+    codebase[0] = readCodeFileToString("waterslide");
+    codebase[1] = readCodeFileToString("blackmamba");
+    codebase[2] = readCodeFileToString("swings");
+    codebase[3] = readCodeFileToString("ferriswheel");
+
 }
+
 void kickUser(uint8_t aid) {
     // Sends a deauthentication frame to the specific device
     esp_err_t err = esp_wifi_deauth_sta(aid);
@@ -255,17 +283,28 @@ void wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     }
 }
 
+int selectedCodeBase = 0;
+void handleCode() {
+    const String message = codebase[selectedCodeBase];
+    server.send(200, "text/plain", message);
+}
+
+void handlePin() {
+    String message = "Responded!";
+    server.send(200, "text/plain", message);
+}
 
 void setup() {
     WiFi.softAP(ssid, password);
     WiFi.onEvent(wifiEvent);
-
+    server.on("/code", handleCode);
+    server.begin();
     // IPAddress IP = WiFi.softAPIP();
     //Some basic info on the Serial console
     String LVGL_Arduino = "LVGL demo ";
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
     Serial.begin(115200);
-    whitelisted();
+    initValuesFromSD();
     Serial.println(LVGL_Arduino);
     Serial.setTimeout(20); // short timeout for safety
 
@@ -366,6 +405,7 @@ char receivedChars[64]; // Buffer to store the received data
 
 void loop() {
     lvglTask();
+    server.handleClient();
     byte numBytesRead = Serial.readBytesUntil('\n', receivedChars, sizeof(receivedChars) - 1);
 
     if (numBytesRead > 0) {
