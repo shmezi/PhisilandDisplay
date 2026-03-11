@@ -23,6 +23,7 @@ extern lv_obj_t *ui_SensorBFrame;
 extern lv_obj_t *ui_SensorBValue;
 extern void ui_event_Image7( lv_event_t * e);
 extern lv_obj_t *ui_Image7;
+extern void ui_event_logo( lv_event_t * e);
 extern lv_obj_t *ui_logo;
 extern lv_obj_t *ui_SensorBFrame3;
 extern lv_obj_t *ui_SensorCValue;

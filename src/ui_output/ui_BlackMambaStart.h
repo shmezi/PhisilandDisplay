@@ -24,6 +24,7 @@ extern lv_obj_t *ui_SensorAFrame2;
 extern lv_obj_t *ui_SensorAValue2;
 extern void ui_event_Image2( lv_event_t * e);
 extern lv_obj_t *ui_Image2;
+extern void ui_event_logo2( lv_event_t * e);
 extern lv_obj_t *ui_logo2;
 // CUSTOM VARIABLES
 

@@ -6,7 +6,7 @@
 #define PHISILANDDISPLAY_DISPLAY_H
 #include <SPI.h>
 
-#include "XPT2046_Touchscreen.h"
+#include "XPT2046_Bitbang.h"
 #include "display/lv_display_private.h"
 
 // SPI pins:
@@ -29,8 +29,7 @@ class Display {
     static uint8_t *draw_buf; //draw_buf is allocated on heap otherwise the static area is too big on ESP32 at compile
     static uint32_t lastTick; //Used to track the tick timer
 
-    static SPIClass touchscreenSpi;
-    static XPT2046_Touchscreen touchscreen;
+    static XPT2046_Bitbang touchscreen;
 
     static uint16_t touchScreenMinimumX;
     static uint16_t touchScreenMaximumX;

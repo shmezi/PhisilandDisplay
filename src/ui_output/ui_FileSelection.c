@@ -5,13 +5,30 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_FileSelection = NULL;lv_obj_t *ui_StartStop3 = NULL;lv_obj_t *ui_StartStopLabel3 = NULL;lv_obj_t *ui_logo3 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_Roller2 = NULL;
+lv_obj_t *ui_FileSelection = NULL;lv_obj_t *ui_logo3 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_Roller2 = NULL;lv_obj_t *ui_ButtonZone = NULL;lv_obj_t *ui_StartStop3 = NULL;lv_obj_t *ui_StartStopLabel3 = NULL;lv_obj_t *ui_StartStop5 = NULL;lv_obj_t *ui_StartStopLabel5 = NULL;
 // event funtions
+void ui_event_logo3( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+if ( event_code == LV_EVENT_CLICKED) {
+      onBackButton( e );
+}
+}
+
 void ui_event_StartStop3( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
 if ( event_code == LV_EVENT_CLICKED) {
       onStartButton( e );
+}
+}
+
+void ui_event_StartStop5( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+if ( event_code == LV_EVENT_CLICKED) {
+      connectBT( e );
+      _ui_state_modify( ui_StartStop5, LV_STATE_CHECKED, _UI_MODIFY_STATE_TOGGLE);
 }
 }
 
@@ -21,26 +38,6 @@ void ui_FileSelection_screen_init(void)
 {
 ui_FileSelection = lv_obj_create(NULL);
 lv_obj_remove_flag( ui_FileSelection, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-
-ui_StartStop3 = lv_button_create(ui_FileSelection);
-lv_obj_set_width( ui_StartStop3, 80);
-lv_obj_set_height( ui_StartStop3, 80);
-lv_obj_set_y( ui_StartStop3, 0 );
-lv_obj_set_x( ui_StartStop3, lv_pct(35) );
-lv_obj_set_align( ui_StartStop3, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_StartStop3, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
-lv_obj_remove_flag( ui_StartStop3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_radius(ui_StartStop3, 100, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_bg_color(ui_StartStop3, lv_color_hex(0x54B034), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_StartStop3, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_bg_color(ui_StartStop3, lv_color_hex(0xBA4646), LV_PART_MAIN | LV_STATE_CHECKED );
-lv_obj_set_style_bg_opa(ui_StartStop3, 255, LV_PART_MAIN| LV_STATE_CHECKED);
-
-ui_StartStopLabel3 = lv_label_create(ui_StartStop3);
-lv_obj_set_width( ui_StartStopLabel3, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_StartStopLabel3, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_StartStopLabel3, LV_ALIGN_CENTER );
-lv_label_set_text(ui_StartStopLabel3,"Run");
 
 ui_logo3 = lv_image_create(ui_FileSelection);
 lv_image_set_src(ui_logo3, &ui_img_amitlogo_png);
@@ -60,14 +57,66 @@ lv_obj_set_style_text_align(ui_Label3, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_ST
 lv_obj_set_style_text_font(ui_Label3, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_Roller2 = lv_roller_create(ui_FileSelection);
-lv_roller_set_options( ui_Roller2, "NO FILES FOUND!", LV_ROLLER_MODE_NORMAL );
+lv_roller_set_options( ui_Roller2, "Water Slide\nBlack Mamba\nSwings\nFerris Wheel", LV_ROLLER_MODE_NORMAL );
 lv_obj_set_height( ui_Roller2, 146);
 lv_obj_set_width( ui_Roller2, lv_pct(67));
 lv_obj_set_x( ui_Roller2, -42 );
 lv_obj_set_y( ui_Roller2, 0 );
 lv_obj_set_align( ui_Roller2, LV_ALIGN_CENTER );
 
+ui_ButtonZone = lv_obj_create(ui_FileSelection);
+lv_obj_remove_style_all(ui_ButtonZone);
+lv_obj_set_width( ui_ButtonZone, 85);
+lv_obj_set_height( ui_ButtonZone, 140);
+lv_obj_set_x( ui_ButtonZone, -9 );
+lv_obj_set_y( ui_ButtonZone, -41 );
+lv_obj_set_align( ui_ButtonZone, LV_ALIGN_BOTTOM_RIGHT );
+lv_obj_remove_flag( ui_ButtonZone, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_StartStop3 = lv_button_create(ui_ButtonZone);
+lv_obj_set_width( ui_StartStop3, 80);
+lv_obj_set_height( ui_StartStop3, 80);
+lv_obj_set_align( ui_StartStop3, LV_ALIGN_TOP_MID );
+lv_obj_add_flag( ui_StartStop3, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
+lv_obj_remove_flag( ui_StartStop3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_radius(ui_StartStop3, 100, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_color(ui_StartStop3, lv_color_hex(0x54B034), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_StartStop3, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_color(ui_StartStop3, lv_color_hex(0xBA4646), LV_PART_MAIN | LV_STATE_CHECKED );
+lv_obj_set_style_bg_opa(ui_StartStop3, 255, LV_PART_MAIN| LV_STATE_CHECKED);
+
+ui_StartStopLabel3 = lv_label_create(ui_StartStop3);
+lv_obj_set_width( ui_StartStopLabel3, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_StartStopLabel3, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_StartStopLabel3, LV_ALIGN_CENTER );
+lv_label_set_text(ui_StartStopLabel3,"Run");
+
+ui_StartStop5 = lv_button_create(ui_ButtonZone);
+lv_obj_set_width( ui_StartStop5, 74);
+lv_obj_set_height( ui_StartStop5, 29);
+lv_obj_set_y( ui_StartStop5, 90 );
+lv_obj_set_x( ui_StartStop5, lv_pct(0) );
+lv_obj_set_align( ui_StartStop5, LV_ALIGN_TOP_MID );
+lv_obj_add_flag( ui_StartStop5, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
+lv_obj_remove_flag( ui_StartStop5, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_radius(ui_StartStop5, 6, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_color(ui_StartStop5, lv_color_hex(0x2723CB), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_StartStop5, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_color(ui_StartStop5, lv_color_hex(0x35C3DF), LV_PART_MAIN | LV_STATE_CHECKED );
+lv_obj_set_style_bg_opa(ui_StartStop5, 255, LV_PART_MAIN| LV_STATE_CHECKED);
+lv_obj_set_style_border_color(ui_StartStop5, lv_color_hex(0x000931), LV_PART_MAIN | LV_STATE_CHECKED );
+lv_obj_set_style_border_opa(ui_StartStop5, 255, LV_PART_MAIN| LV_STATE_CHECKED);
+lv_obj_set_style_border_width(ui_StartStop5, 1, LV_PART_MAIN| LV_STATE_CHECKED);
+
+ui_StartStopLabel5 = lv_label_create(ui_StartStop5);
+lv_obj_set_width( ui_StartStopLabel5, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_StartStopLabel5, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_StartStopLabel5, LV_ALIGN_CENTER );
+lv_label_set_text(ui_StartStopLabel5,"Connect");
+
+lv_obj_add_event_cb(ui_logo3, ui_event_logo3, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_StartStop3, ui_event_StartStop3, LV_EVENT_ALL, NULL);
+lv_obj_add_event_cb(ui_StartStop5, ui_event_StartStop5, LV_EVENT_ALL, NULL);
 
 }
 
@@ -77,10 +126,13 @@ void ui_FileSelection_screen_destroy(void)
 
 // NULL screen variables
 ui_FileSelection= NULL;
-ui_StartStop3= NULL;
-ui_StartStopLabel3= NULL;
 ui_logo3= NULL;
 ui_Label3= NULL;
 ui_Roller2= NULL;
+ui_ButtonZone= NULL;
+ui_StartStop3= NULL;
+ui_StartStopLabel3= NULL;
+ui_StartStop5= NULL;
+ui_StartStopLabel5= NULL;
 
 }

@@ -34,6 +34,14 @@ if ( event_code == LV_EVENT_CLICKED) {
 }
 }
 
+void ui_event_logo1( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_FileSelection, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_FileSelection_screen_init);
+}
+}
+
 // build funtions
 
 void ui_SwingStart_screen_init(void)
@@ -145,6 +153,7 @@ lv_obj_remove_flag( ui_logo1, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_add_event_cb(ui_SpeedControl1, ui_event_SpeedControl1, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_StartStop1, ui_event_StartStop1, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image1, ui_event_Image1, LV_EVENT_ALL, NULL);
+lv_obj_add_event_cb(ui_logo1, ui_event_logo1, LV_EVENT_ALL, NULL);
 
 }
 

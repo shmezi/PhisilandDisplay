@@ -21,6 +21,9 @@ class DovetailSystem {
 public:
     static WebServer server;
     static void init();
+    static bool connectMode;
+
+    static void connection();
 };
 
 

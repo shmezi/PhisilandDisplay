@@ -14,6 +14,8 @@ public:
     static String codebase[4];
 
     static void initValuesFromSD();
+
+    static void saveToMacList();
 };
 
 

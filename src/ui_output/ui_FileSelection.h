@@ -14,12 +14,17 @@ extern "C" {
 extern void ui_FileSelection_screen_init(void);
 extern void ui_FileSelection_screen_destroy(void);
 extern lv_obj_t *ui_FileSelection;
-extern void ui_event_StartStop3( lv_event_t * e);
-extern lv_obj_t *ui_StartStop3;
-extern lv_obj_t *ui_StartStopLabel3;
+extern void ui_event_logo3( lv_event_t * e);
 extern lv_obj_t *ui_logo3;
 extern lv_obj_t *ui_Label3;
 extern lv_obj_t *ui_Roller2;
+extern lv_obj_t *ui_ButtonZone;
+extern void ui_event_StartStop3( lv_event_t * e);
+extern lv_obj_t *ui_StartStop3;
+extern lv_obj_t *ui_StartStopLabel3;
+extern void ui_event_StartStop5( lv_event_t * e);
+extern lv_obj_t *ui_StartStop5;
+extern lv_obj_t *ui_StartStopLabel5;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

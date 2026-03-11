@@ -15,11 +15,16 @@ void onStartButton(lv_event_t *e) {
 void onBackButton(lv_event_t *e) {
     Game::onBackButton(e);
 }
+    void connectBT(lv_event_t *e) {
+
+    DovetailSystem::connection();
+}
 }
 
 
 void setup() {
     Serial.begin(115200);
+
     Store::initValuesFromSD();
 
     DovetailSystem::init();

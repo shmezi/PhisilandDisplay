@@ -27,6 +27,14 @@ if ( event_code == LV_EVENT_CLICKED) {
 }
 }
 
+void ui_event_logo( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_FileSelection, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_FileSelection_screen_init);
+}
+}
+
 // build funtions
 
 void ui_WaterParkStart_screen_init(void)
@@ -151,6 +159,7 @@ lv_obj_set_style_text_font(ui_Label2, &lv_font_montserrat_20, LV_PART_MAIN| LV_S
 
 lv_obj_add_event_cb(ui_StartStop, ui_event_StartStop, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image7, ui_event_Image7, LV_EVENT_ALL, NULL);
+lv_obj_add_event_cb(ui_logo, ui_event_logo, LV_EVENT_ALL, NULL);
 
 }
 

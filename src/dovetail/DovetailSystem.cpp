@@ -53,6 +53,7 @@ const char *password = "Phisiland";
 
 int selectedCodeBase = 0;
 WebServer DovetailSystem::server = {80};
+bool DovetailSystem::connectMode = false;
 
 void DovetailSystem::kickUser(uint8_t aid) {
     // Sends a deauthentication frame to the specific device
@@ -68,21 +69,29 @@ void DovetailSystem::kickUser(uint8_t aid) {
 void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     switch (event) {
         case ARDUINO_EVENT_WIFI_AP_STACONNECTED: {
-            char macStr[18]; // Buffer to hold "XX:XX:XX:XX:XX:XX"
+            char macStr[18];
             uint8_t *mac = info.wifi_ap_staconnected.mac;
             uint16_t aid = info.wifi_ap_staconnected.aid;
             // Properly format the MAC address into a human-readable Hex string
             sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-            Serial.print("New client connected. MAC: ");
+            Serial.print("Client connected. MAC: ");
             Serial.println(macStr);
 
-            if (Store::allowedMacs.count(macStr) <= 0) {
-                Serial.println("Target device detected!");
-                // WiFi.softAPdisconnect(false);
-                kickUser(aid);
+            if (Store::allowedMacs.count(macStr) > 0) {
+                Serial.println("Exists!");
+                break;
             }
+
+            if (!connectMode) {
+                Serial.println("This client is not associated with this device!");
+                kickUser(aid);
+                break;
+            }
+
+            Store::allowedMacs.insert(macStr);
+            Store::saveToMacList();
             break;
         }
 
@@ -111,4 +120,8 @@ void DovetailSystem::init() {
     WiFi.onEvent(wifiEvent);
     server.on("/code", handleCode);
     server.begin();
+}
+
+void DovetailSystem::connection() {
+    connectMode = !connectMode;
 }

@@ -35,6 +35,11 @@ void Store::initValuesFromSD() {
     while (!Serial) {
         // Wait for Serial Monitor to open
     }
+    SD.end();
+    if (!SD.begin(5)) {
+        // 5 is the standard SD_CS for CYD
+        Serial.println("Retry failed");
+    }
     Serial.println("Initializing SD card...");
 
     if (!SD.begin(5, SPI, 4000000)) {
@@ -49,10 +54,11 @@ void Store::initValuesFromSD() {
         Serial.println("Registered mac addresses:");
         while (dataFile.available()) {
             String line = dataFile.readStringUntil('\n');
-            allowedMacs.insert(line);
-            Serial.println(line); // Print the line to the Serial Monitor
-        }
+            line.trim();
 
+            allowedMacs.insert(line);
+            Serial.println("MAC: '" +  line + "'"); // Print the line to the Serial Monitor
+        }
         dataFile.close();
     } else {
         Serial.println("Error opening allowed-mac.txt!");
@@ -62,4 +68,27 @@ void Store::initValuesFromSD() {
     codebase[1] = readCodeFileToString("blackmamba");
     codebase[2] = readCodeFileToString("swings");
     codebase[3] = readCodeFileToString("ferriswheel");
+}
+
+void Store::saveToMacList() {
+    SD.end();
+    if (!SD.begin(5)) {
+        // 5 is the standard SD_CS for CYD
+        Serial.println("Retry failed");
+    }
+    // Opening with FILE_WRITE replaces the old file
+    File file = SD.open("/allowed-mac.txt", FILE_WRITE);
+
+    if (!file) {
+        Serial.println("Failed to open file for writing");
+        return;
+    }
+
+    // Iterate through the set and write each element
+    for (const auto &value: allowedMacs) {
+        file.println(value);
+    }
+
+    file.close();
+    Serial.println("Set successfully saved (replaced old file).");
 }

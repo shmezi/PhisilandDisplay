@@ -7,24 +7,28 @@
 #include "lvgl.h"
 #include "lv_api_map_v8.h"
 #include "TFT_eSPI.h"
-#include "XPT2046_Touchscreen.h"
 #include "display/lv_display.h"
 #include "indev/lv_indev.h"
 #include "misc/lv_types.h"
 #include "ui_output/ui.h"
+#include <XPT2046_Bitbang.h>
 
 
 lv_indev_t *Display::indev;
 uint8_t *Display::draw_buf;
 
 uint32_t Display::lastTick = 0;
-SPIClass Display::touchscreenSpi = SPIClass(VSPI);
 
-XPT2046_Touchscreen Display::touchscreen = XPT2046_Touchscreen(XPT2046_CS, XPT2046_IRQ);
-uint16_t Display::touchScreenMinimumX = 200;
-uint16_t Display::touchScreenMaximumX = 3700;
-uint16_t Display::touchScreenMinimumY = 240;
-uint16_t Display::touchScreenMaximumY = 3800;
+#define MOSI_PIN 32
+#define MISO_PIN 39
+#define CLK_PIN  25
+#define CS_PIN   33
+
+XPT2046_Bitbang Display::touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
+uint16_t Display::touchScreenMinimumX = 1000;
+uint16_t Display::touchScreenMaximumX = 0;
+uint16_t Display::touchScreenMinimumY = 1000;
+uint16_t Display::touchScreenMaximumY = 0;
 
 
 auto tft = TFT_eSPI(); // Manually define the object
@@ -47,21 +51,34 @@ void Display::my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *
     lv_disp_flush_ready(disp);
 }
 
-/*Read the touchpad*/
 void Display::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
-    if (touchscreen.touched()) {
-        TS_Point p = touchscreen.getPoint();
-        //Some very basic auto calibration so it doesn't go out of range
+    const auto p = touchscreen.getTouch();
+
+    // Use a small threshold. p.zRaw != 0 is often too twitchy
+    if (p.zRaw > 20) {
+        // Update Calibration Limits (Ensure these variables are initialized!)
         if (p.x < touchScreenMinimumX) touchScreenMinimumX = p.x;
         if (p.x > touchScreenMaximumX) touchScreenMaximumX = p.x;
         if (p.y < touchScreenMinimumY) touchScreenMinimumY = p.y;
         if (p.y > touchScreenMaximumY) touchScreenMaximumY = p.y;
-        //Map this to the pixel position
-        data->point.x = map(p.x, touchScreenMinimumX, touchScreenMaximumX, 1,TFT_HORI_RES);
-        /* Touchscreen X calibration */
-        data->point.y = map(p.y, touchScreenMinimumY, touchScreenMaximumY, 1,TFT_VERI_RES);
-        /* Touchscreen Y calibration */
+
+        // Prevent divide-by-zero on the very first touch
+        if (touchScreenMaximumX <= touchScreenMinimumX) {
+            data->state = LV_INDEV_STATE_RELEASED;
+            return;
+        }
+        // 1. Map the RAW Y to the SCREEN X (Horizontal)
+        // We use 0 to RES-1 to "un-flip" the inversion you're seeing
+        int32_t x_mapped = map(p.y, touchScreenMinimumY, touchScreenMaximumY, 0, TFT_HORI_RES - 1);
+
+        // 2. Map the RAW X to the SCREEN Y (Vertical)
+        int32_t y_mapped = map(p.x, touchScreenMinimumX, touchScreenMaximumX,  TFT_VERI_RES - 1,0);
+
+        // 3. Constrain and Assign
+        data->point.x = (lv_coord_t)constrain(x_mapped, 0, TFT_HORI_RES - 1);
+        data->point.y = (lv_coord_t)constrain(y_mapped, 0, TFT_VERI_RES - 1);
         data->state = LV_INDEV_STATE_PRESSED;
+        // Serial.printf("Raw(%d,%d) -> Pixel(%d,%d)\n", p.x, p.y, data->point.x, data->point.y);
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
@@ -75,6 +92,7 @@ void Display::lvglTask() {
 
 void Display::innit() {
     String LVGL_Arduino = "LVGL demo ";
+
     LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
 
@@ -85,10 +103,9 @@ void Display::innit() {
     digitalWrite(21, HIGH);
     //Initialise the touchscreen
 
-    touchscreenSpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
     /* Start second SPI bus for touchscreen */
-    touchscreen.begin(touchscreenSpi); /* Touchscreen init */
-    touchscreen.setRotation(0); /* Inverted landscape orientation to match screen */
+    touchscreen.begin(); /* Touchscreen init */
+    // touchscreen.setCalibration(); /* Inverted landscape orientation to match screen */
 
     //Initialise LVGL
     lv_init();
@@ -100,7 +117,7 @@ void Display::innit() {
     tft.fillScreen(TFT_BLACK); // Clear the garbled memory
 
     disp = lv_tft_espi_create(TFT_HORI_RES, TFT_VERI_RES, draw_buf, DRAW_BUF_SIZE);
-    touchscreen.setRotation(2);
+    // touchscreen.setRotation(2);
     lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // <<-- Add line
 
     delay(1000);

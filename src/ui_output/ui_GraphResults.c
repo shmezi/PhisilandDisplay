@@ -105,7 +105,7 @@ ui_Image9 = lv_image_create(ui_GraphResults);
 lv_image_set_src(ui_Image9, &ui_img_1504419431);
 lv_obj_set_width( ui_Image9, LV_SIZE_CONTENT);  /// 24
 lv_obj_set_height( ui_Image9, LV_SIZE_CONTENT);   /// 24
-lv_obj_set_x( ui_Image9, -8 );
+lv_obj_set_x( ui_Image9, -9 );
 lv_obj_set_y( ui_Image9, -8 );
 lv_obj_set_align( ui_Image9, LV_ALIGN_BOTTOM_RIGHT );
 lv_obj_set_ext_click_area(ui_Image9, 15);
