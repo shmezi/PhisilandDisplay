@@ -22,7 +22,7 @@
 #include <set>
 #include "SD.h"
 #include "SPI.h"
-// Replace with your desired network credentials
+
 const char *woodshop_words[] = {
     "Maple", "Haven", "Willow", "Corner", "Garden",
     "Meadow", "Porch", "Valley", "Street", "Breezy",
@@ -202,6 +202,7 @@ String readCodeFileToString(const String &path) {
 
 std::set<String> allowedMacs;
 String codebase[4];
+
 void initValuesFromSD() {
     while (!Serial); // Wait for Serial Monitor to open
 
@@ -239,7 +240,6 @@ void initValuesFromSD() {
     codebase[1] = readCodeFileToString("blackmamba");
     codebase[2] = readCodeFileToString("swings");
     codebase[3] = readCodeFileToString("ferriswheel");
-
 }
 
 void kickUser(uint8_t aid) {
@@ -284,6 +284,7 @@ void wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
 }
 
 int selectedCodeBase = 0;
+
 void handleCode() {
     const String message = codebase[selectedCodeBase];
     server.send(200, "text/plain", message);
