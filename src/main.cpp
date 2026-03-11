@@ -38,6 +38,6 @@ char receivedChars[64]; // Buffer to store the received data
 
 void loop() {
     Display::lvglTask();
-    DovetailSystem::server.handleClient();
+    // DovetailSystem::server.handleClient();
     delay(5);
 }

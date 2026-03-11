@@ -6,7 +6,9 @@
 #include <HTTPClient.h>
 
 #include <esp_wifi.h>
-#include <WebServer.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
+#include <SD.h>
 
 #include "store/Store.h"
 const char *verbs[] = {
@@ -47,13 +49,14 @@ const char *nouns[] = {
 
 int rand1 = random(0, 30);
 int rand2 = random(0, 30);
+String ssid = "Dovetail-Testing";
 
-String ssid = "Dovetail-" + String(verbs[rand1]) + "-" + String(nouns[rand2]);
+// String ssid = "Dovetail-" + String(verbs[rand1]) + "-" + String(nouns[rand2]);
 const char *password = "Phisiland";
 
 
 int selectedCodeBase = 0;
-WebServer DovetailSystem::server = {80};
+AsyncWebServer DovetailSystem::server = {80};
 bool DovetailSystem::connectMode = false;
 
 void DovetailSystem::kickUser(uint8_t aid) {
@@ -81,19 +84,19 @@ void DovetailSystem::sendMessage() {
     // Send HTTP GET request
     int httpResponseCode = http.GET();
 
-    if (httpResponseCode>0) {
+    if (httpResponseCode > 0) {
         Serial.print("HTTP Response code: ");
         Serial.println(httpResponseCode);
         String payload = http.getString();
         Serial.println(payload);
-    }
-    else {
+    } else {
         Serial.print("Error code: ");
         Serial.println(httpResponseCode);
     }
     // Free resources
     http.end();
 }
+
 void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     switch (event) {
         case ARDUINO_EVENT_WIFI_AP_STACONNECTED: {
@@ -132,23 +135,91 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     }
 }
 
-void DovetailSystem::handleCode() {
-    const String message = Store::codebase[selectedCodeBase];
-    server.send(200, "text/plain", message);
-}
-
-void DovetailSystem::handlePin() {
-    String message = "Responded!";
-    server.send(200, "text/plain", message);
-}
-
 
 void DovetailSystem::init() {
     WiFi.softAP(ssid, password);
     WiFi.onEvent(wifiEvent);
-    server.on("/code", handleCode);
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(SD, "/index.html", "text/html");
+    });
+    server.serveStatic("/lib", SD, "/lib/");
+    // Create the directory if it doesn't exist
+    if (!SD.exists("/scripts")) {
+        SD.mkdir("/scripts");
+    }
+
+    // UPDATED SAVE ROUTE
+    // Expects a URL like: /save?name=myfile.phi
+    server.on("/save", HTTP_POST, [](AsyncWebServerRequest *request) {
+              }, nullptr,
+              [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+                  String fileName = "untitled.ezra";
+                  if (request->hasParam("name")) {
+                      fileName = request->getParam("name")->value();
+                  }
+
+                  // Ensure we save into the scripts folder
+                  String path = "/scripts/" + fileName;
+
+                  File f = SD.open(path, FILE_WRITE);
+                  if (f) {
+                      f.write(data, len);
+                      f.close();
+                      request->send(200, "text/plain", "Saved: " + path);
+                  } else {
+                      request->send(500, "text/plain", "SD Write Failed");
+                  }
+              });
+    // Ensure this matches your JS call
+    server.on("/read", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("name")) {
+            String filename = request->getParam("name")->value();
+            String path = "/scripts/" + filename; // Must match the folder in /list
+
+            if (SD.exists(path)) {
+                request->send(SD, path, "text/plain");
+            } else {
+                request->send(404, "text/plain", "File Not Found");
+            }
+        }
+    });
+    // 1. DELETE FILE
+    server.on("/delete", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(request->hasParam("name")) {
+        String path = "/scripts/" + request->getParam("name")->value();
+        if(SD.remove(path)) request->send(200, "text/plain", "Deleted");
+        else request->send(500, "text/plain", "Delete Failed");
+      }
+    });
+
+    // 2. RENAME FILE
+    server.on("/rename", HTTP_GET, [](AsyncWebServerRequest *request){
+      if(request->hasParam("old") && request->hasParam("new")) {
+        String oldPath = "/scripts/" + request->getParam("old")->value();
+        String newPath = "/scripts/" + request->getParam("new")->value();
+        if(SD.rename(oldPath, newPath)) request->send(200, "text/plain", "Renamed");
+        else request->send(500, "text/plain", "Rename Failed");
+      }
+    });
+
+    // UPDATED LIST ROUTE (Only shows files in /scripts)
+    server.on("/list", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String json = "[";
+        File root = SD.open("/scripts");
+        File file = root.openNextFile();
+        while (file) {
+            if (!file.isDirectory()) {
+                if (json != "[") json += ",";
+                json += "\"" + String(file.name()) + "\"";
+            }
+            file = root.openNextFile();
+        }
+        json += "]";
+        request->send(200, "application/json", json);
+    });
     server.begin();
 }
+
 
 void DovetailSystem::connection() {
     connectMode = !connectMode;
