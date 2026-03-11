@@ -55,7 +55,7 @@ void Display::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
     const auto p = touchscreen.getTouch();
 
     // Use a small threshold. p.zRaw != 0 is often too twitchy
-    if (p.zRaw > 20) {
+    if (p.zRaw > 30) {
         // Update Calibration Limits (Ensure these variables are initialized!)
         if (p.x < touchScreenMinimumX) touchScreenMinimumX = p.x;
         if (p.x > touchScreenMaximumX) touchScreenMaximumX = p.x;

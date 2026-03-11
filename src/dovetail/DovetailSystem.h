@@ -10,6 +10,7 @@
 class DovetailSystem {
     static void kickUser(uint8_t aid);
 
+
     static void wifiEvent(WiFiEvent_t event, arduino_event_info_t info);
 
     static void handleCode();
@@ -22,6 +23,7 @@ public:
     static WebServer server;
     static void init();
     static bool connectMode;
+    static void sendMessage();
 
     static void connection();
 };

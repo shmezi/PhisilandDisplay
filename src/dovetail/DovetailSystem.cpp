@@ -3,6 +3,7 @@
 //
 
 #include "DovetailSystem.h"
+#include <HTTPClient.h>
 
 #include <esp_wifi.h>
 #include <WebServer.h>
@@ -66,6 +67,33 @@ void DovetailSystem::kickUser(uint8_t aid) {
     }
 }
 
+void DovetailSystem::sendMessage() {
+    HTTPClient http;
+
+    String serverPath = "http://192.168.4.2";
+
+    // Your Domain name with URL path or IP address with path
+    http.begin(serverPath.c_str());
+
+    // If you need Node-RED/server authentication, insert user and password below
+    //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
+
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode>0) {
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+        String payload = http.getString();
+        Serial.println(payload);
+    }
+    else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+    }
+    // Free resources
+    http.end();
+}
 void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     switch (event) {
         case ARDUINO_EVENT_WIFI_AP_STACONNECTED: {
