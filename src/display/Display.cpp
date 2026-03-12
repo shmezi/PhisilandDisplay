@@ -15,7 +15,7 @@
 
 
 lv_indev_t *Display::indev;
-uint8_t *Display::draw_buf;
+lv_color_t *Display::draw_buf;
 
 uint32_t Display::lastTick = 0;
 
@@ -25,10 +25,10 @@ uint32_t Display::lastTick = 0;
 #define CS_PIN   33
 
 XPT2046_Bitbang Display::touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
-uint16_t Display::touchScreenMinimumX = 1000;
-uint16_t Display::touchScreenMaximumX = 0;
-uint16_t Display::touchScreenMinimumY = 1000;
-uint16_t Display::touchScreenMaximumY = 0;
+uint16_t Display::touchScreenMinimumX = 20;
+uint16_t Display::touchScreenMaximumX = 290;
+uint16_t Display::touchScreenMinimumY = 20;
+uint16_t Display::touchScreenMaximumY = 220;
 
 
 auto tft = TFT_eSPI(); // Manually define the object
@@ -45,39 +45,38 @@ bool Display::detectInversionRequirement() {
     return chip_info.revision == 1;
 }
 
-/* LVGL calls it when a rendered image needs to copied to the display*/
 void Display::my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
-    /*Call it to tell LVGL you are ready*/
+    uint32_t width = area->x2 - area->x1 + 1;
+    uint32_t height = area->y2 - area->y1 + 1;
+
+    tft.startWrite();
+    tft.setAddrWindow(area->x1, area->y1, width, height);
+    tft.pushPixels((uint16_t *) px_map, width * height);
+    tft.endWrite();
+
     lv_disp_flush_ready(disp);
 }
-
 void Display::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
     const auto p = touchscreen.getTouch();
-
-    // Use a small threshold. p.zRaw != 0 is often too twitchy
-    if (p.zRaw > 30) {
-        // Update Calibration Limits (Ensure these variables are initialized!)
-        if (p.x < touchScreenMinimumX) touchScreenMinimumX = p.x;
-        if (p.x > touchScreenMaximumX) touchScreenMaximumX = p.x;
-        if (p.y < touchScreenMinimumY) touchScreenMinimumY = p.y;
-        if (p.y > touchScreenMaximumY) touchScreenMaximumY = p.y;
-
-        // Prevent divide-by-zero on the very first touch
-        if (touchScreenMaximumX <= touchScreenMinimumX) {
-            data->state = LV_INDEV_STATE_RELEASED;
-            return;
-        }
+    Serial.print("X: ");
+    Serial.println(p.xRaw);
+    Serial.print("Y: ");
+    Serial.println(p.yRaw);
+    Serial.print("Z: ");
+    Serial.println(p.zRaw);
+    // Ignore noise and ghost touches with a higher threshold
+    if (p.zRaw > 1000) {
         // 1. Map the RAW Y to the SCREEN X (Horizontal)
-        // We use 0 to RES-1 to "un-flip" the inversion you're seeing
         int32_t x_mapped = map(p.y, touchScreenMinimumY, touchScreenMaximumY, 0, TFT_HORI_RES - 1);
 
         // 2. Map the RAW X to the SCREEN Y (Vertical)
-        int32_t y_mapped = map(p.x, touchScreenMinimumX, touchScreenMaximumX,  TFT_VERI_RES - 1,0);
+        int32_t y_mapped = map(p.x, touchScreenMinimumX, touchScreenMaximumX, TFT_VERI_RES - 1, 0);
 
         // 3. Constrain and Assign
-        data->point.x = (lv_coord_t)constrain(x_mapped, 0, TFT_HORI_RES - 1);
-        data->point.y = (lv_coord_t)constrain(y_mapped, 0, TFT_VERI_RES - 1);
+        data->point.x = (lv_coord_t) constrain(x_mapped, 0, TFT_HORI_RES - 1);
+        data->point.y = (lv_coord_t) constrain(y_mapped, 0, TFT_VERI_RES - 1);
         data->state = LV_INDEV_STATE_PRESSED;
+
         // Serial.printf("Raw(%d,%d) -> Pixel(%d,%d)\n", p.x, p.y, data->point.x, data->point.y);
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
@@ -85,8 +84,9 @@ void Display::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
 }
 
 void Display::lvglTask() {
-    lv_tick_inc(millis() - lastTick); //Update the tick timer. Tick is new for LVGL 9
-    lastTick = millis();
+    uint32_t now = millis();
+    lv_tick_inc(now - lastTick);
+    lastTick = now;
     lv_timer_handler();
 }
 
@@ -109,7 +109,7 @@ void Display::innit() {
 
     //Initialise LVGL
     lv_init();
-    draw_buf = new uint8_t[DRAW_BUF_SIZE];
+    draw_buf = new lv_color_t[DRAW_BUF_SIZE];
     lv_display_t *disp;
     tft.begin();
     tft.setRotation(2); // Set to 1 for Landscape

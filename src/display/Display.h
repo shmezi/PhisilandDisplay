@@ -26,7 +26,7 @@ class Display {
      * LVGL Params:
      */
     static lv_indev_t *indev;
-    static uint8_t *draw_buf; //draw_buf is allocated on heap otherwise the static area is too big on ESP32 at compile
+    static lv_color_t *draw_buf; //draw_buf is allocated on heap otherwise the static area is too big on ESP32 at compile
     static uint32_t lastTick; //Used to track the tick timer
 
     static XPT2046_Bitbang touchscreen;
