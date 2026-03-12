@@ -10,7 +10,14 @@
 std::set<String> Store::allowedMacs;
 String Store::codebase[4];
 
+void Store::startSDCard() {
+    SD.end();
+
+    SD.begin(5, SPI, 4000000, "/sd", 10);
+
+}
 String readCodeFileToString(const String &path) {
+
     File file = SD.open("/" + path + ".ezra");
     if (!file) {
         Serial.println("Failed to open " + path + " script.");
@@ -35,17 +42,11 @@ void Store::initValuesFromSD() {
     while (!Serial) {
         // Wait for Serial Monitor to open
     }
-    SD.end();
-    if (!SD.begin(5)) {
-        // 5 is the standard SD_CS for CYD
-        Serial.println("Retry failed");
-    }
+
     Serial.println("Initializing SD card...");
 
-    if (!SD.begin(5, SPI, 4000000)) {
-        Serial.println("Card failed, or not present");
-        while (true);
-    }
+    startSDCard();
+
     Serial.println("Card initialized.");
 
     File dataFile = SD.open("/allowed-mac.txt");
@@ -57,25 +58,24 @@ void Store::initValuesFromSD() {
             line.trim();
 
             allowedMacs.insert(line);
-            Serial.println("MAC: '" +  line + "'"); // Print the line to the Serial Monitor
+            Serial.println("MAC: '" + line + "'"); // Print the line to the Serial Monitor
         }
         dataFile.close();
     } else {
         Serial.println("Error opening allowed-mac.txt!");
     }
 
-    codebase[0] = readCodeFileToString("waterslide");
-    codebase[1] = readCodeFileToString("blackmamba");
-    codebase[2] = readCodeFileToString("swings");
-    codebase[3] = readCodeFileToString("ferriswheel");
+
+    // codebase[0] = readCodeFileToString("waterslide");
+    // codebase[1] = readCodeFileToString("blackmamba");
+    // codebase[2] = readCodeFileToString("swings");
+    // codebase[3] = readCodeFileToString("ferriswheel");
 }
 
 void Store::saveToMacList() {
-    SD.end();
-    if (!SD.begin(5)) {
-        // 5 is the standard SD_CS for CYD
-        Serial.println("Retry failed");
-    }
+
+    startSDCard();
+
     // Opening with FILE_WRITE replaces the old file
     File file = SD.open("/allowed-mac.txt", FILE_WRITE);
 
@@ -91,4 +91,5 @@ void Store::saveToMacList() {
 
     file.close();
     Serial.println("Set successfully saved (replaced old file).");
+
 }

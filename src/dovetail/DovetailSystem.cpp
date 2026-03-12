@@ -73,7 +73,7 @@ void DovetailSystem::kickUser(uint8_t aid) {
 void DovetailSystem::sendMessage() {
     HTTPClient http;
 
-    String serverPath = "http://192.168.4.2";
+    String serverPath = "http://192.168.4.2/reset";
 
     // Your Domain name with URL path or IP address with path
     http.begin(serverPath.c_str());
@@ -137,6 +137,7 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
 
 
 void DovetailSystem::init() {
+
     WiFi.softAP(ssid, password);
     WiFi.onEvent(wifiEvent);
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -216,7 +217,23 @@ void DovetailSystem::init() {
         }
         json += "]";
         request->send(200, "application/json", json);
+        root.close();
     });
+    // 4. SEND PREDEFINED FILE
+    server.on("/code", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String path = "/scripts/waterslide.code"; // Your predefined file path
+
+        if (SD.exists(path)) {
+            // Send the file. "text/plain" is usually best for code/scripts
+            request->send(SD, path, "text/plain");
+        } else {
+            // Fallback if the file hasn't been created yet
+            request->send(404, "text/plain", "Predefined file not found on SD");
+        }
+    });
+    server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
+     sendMessage();
+   });
     server.begin();
 }
 

@@ -18,8 +18,11 @@
 
 int Game::screen = 1;
 
+void Game::onResetButton(lv_event_t *e) {
+    DovetailSystem::sendMessage();
+}
 void Game::onStartButton(lv_event_t *e) {
-    // DovetailSystem::sendMessage();
+
     if (!(lv_obj_has_state(ui_StartStop, LV_STATE_CHECKED) || lv_obj_has_state(ui_StartStop1, LV_STATE_CHECKED) ||
           lv_obj_has_state(ui_StartStop2, LV_STATE_CHECKED))) {
         Serial.print("~-1");

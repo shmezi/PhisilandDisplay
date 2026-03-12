@@ -11,6 +11,9 @@ extern "C" {
 void onStartButton(lv_event_t *e) {
     Game::onStartButton(e);
 }
+    void onResetButton(lv_event_t *e) {
+    Game::onResetButton(e);
+}
 
 void onBackButton(lv_event_t *e) {
     Game::onBackButton(e);

@@ -58,12 +58,12 @@ void Display::my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *
 }
 void Display::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
     const auto p = touchscreen.getTouch();
-    Serial.print("X: ");
-    Serial.println(p.xRaw);
-    Serial.print("Y: ");
-    Serial.println(p.yRaw);
-    Serial.print("Z: ");
-    Serial.println(p.zRaw);
+    // Serial.print("X: ");
+    // Serial.println(p.xRaw);
+    // Serial.print("Y: ");
+    // Serial.println(p.yRaw);
+    // Serial.print("Z: ");
+    // Serial.println(p.zRaw);
     // Ignore noise and ghost touches with a higher threshold
     if (p.zRaw > 1000) {
         // 1. Map the RAW Y to the SCREEN X (Horizontal)
@@ -99,11 +99,11 @@ void Display::innit() {
     Serial.println(LVGL_Arduino);
     Serial.setTimeout(20); // short timeout for safety
 
-    pinMode(21, OUTPUT);
-    digitalWrite(21, HIGH);
-    //Initialise the touchscreen
-
-    /* Start second SPI bus for touchscreen */
+    // pinMode(21, OUTPUT);
+    // digitalWrite(21, HIGH);
+    // //Initialise the touchscreen
+    //
+    // /* Start second SPI bus for touchscreen */
     touchscreen.begin(); /* Touchscreen init */
     // touchscreen.setCalibration(); /* Inverted landscape orientation to match screen */
 

@@ -13,6 +13,8 @@ public:
     static std::set<String> allowedMacs;
     static String codebase[4];
 
+    static void startSDCard();
+
     static void initValuesFromSD();
 
     static void saveToMacList();

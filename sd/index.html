@@ -293,7 +293,7 @@
 
     function runCode() {
         if (!activeFile) return alert("Select a file");
-        fetch(`/run?name=${encodeURIComponent(activeFile)}`);
+        fetch(`/reset?name=${encodeURIComponent(activeFile)}`);
     }
 
     window.onload = async () => {

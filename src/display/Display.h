@@ -38,7 +38,8 @@ class Display {
 
 
     /*LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes*/
-#define DRAW_BUF_SIZE (TFT_HORI_RES * TFT_VERI_RES / 10 * (LV_COLOR_DEPTH / 8))
+// #define DRAW_BUF_SIZE (TFT_HORI_RES * TFT_VERI_RES / 10 * (LV_COLOR_DEPTH / 8))
+#define DRAW_BUF_SIZE (320 * 24)
 
 #if LV_USE_LOG != 0
     void my_print(lv_log_level_t level, const char *buf) {
