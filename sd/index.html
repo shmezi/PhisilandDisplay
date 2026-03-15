@@ -5560,9 +5560,37 @@
         .status-saved { background: #e6fffa; color: #38a169; }
 
         .btn { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); color: #4a5568; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+        /* New Device Selector Styles */
+        .device-selector {
+            display: flex;
+            align-items: center;
+            background: #f1f3f4;
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-right: 10px;
+            transition: all 0.2s;
+        }
+        .device-selector:hover { border-color: var(--accent-blue); }
+        #active-device {
+            background: transparent;
+            border: none;
+            font-size: 12px;
+            font-weight: 500;
+            color: #444;
+            outline: none;
+            cursor: pointer;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .toolbar { display: flex; align-items: center; padding: 0 15px; }
+        .logo { margin-right: auto; font-weight: bold; color: var(--accent-blue); }
+
     </style>
+
 </head>
 <body>
+
 
 <div id="sidebar">
     <div class="sidebar-header">
@@ -5577,6 +5605,17 @@
 <div id="main">
     <div class="toolbar">
         <div class="logo">Dovetail</div>
+
+        <div class="device-selector" title="Select Target ESP32">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; opacity: 0.6;"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/></svg>
+            <select id="active-device" onchange="selectedMac = this.value">
+                <option value="">Loading Devices...</option>
+            </select>
+            <div class="icon-btn" onclick="renameCurrentDevice()" style="margin-left: 8px;" title="Rename selected device">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+        </div>
+
 
         <button class="btn" onclick="saveFile()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -5595,187 +5634,27 @@
 
 <script>
     // --- 1. Syntax Mode Definition ---
-    // Updated Categories
     const CONTROL_FLOW = ["if", "and", "or", "not", "while", "fn", "return", "when", "once"];
     const HARDWARE = ["move", "motor", "rotate", "reset", "clear", "write", "read", "analog", "on"];
     const SENSORS = ["gyro", "angle", "rotations", "degrees", "encoder", "status", "now"];
     const SYSTEM = ["print", "sendResult", "endActivity", "after", "true", "false", "yes", "no"];
-
-    // Update ALL_SUGGESTIONS so they appear in autocomplete
     const ALL_SUGGESTIONS = [...CONTROL_FLOW, ...HARDWARE, ...SENSORS, ...SYSTEM].sort();
-    // Update defineMode
+
     CodeMirror.defineMode("phiSyntax", function() {
         return {
             token: function(stream) {
                 if (stream.eatSpace()) return null;
                 if (stream.match("//")) { stream.skipToEnd(); return "comment"; }
                 if (stream.match(/^"([^"\\]|\\.)*"/)) return "string";
-
-                // Logic/Flow (Pink/Bold)
                 if (stream.match(new RegExp(`(?:${CONTROL_FLOW.join('|')})\\b`))) return "keyword";
-
-                // Hardware/Actions (Blue/Strong)
                 if (stream.match(new RegExp(`(?:${HARDWARE.join('|')})\\b`))) return "builtin";
-
-                // Sensors (Orange/Gold)
                 if (stream.match(new RegExp(`(?:${SENSORS.join('|')})\\b`))) return "variable-2";
-
-                // System (Purple/Muted)
                 if (stream.match(new RegExp(`(?:${SYSTEM.join('|')})\\b`))) return "atom";
-
                 if (stream.match(/[\d\.]+/)) return "number";
-                stream.next();
-                return null;
+                stream.next(); return null;
             }
         };
     });
-
-    // --- 2. Initialize Editor ---
-    var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
-        lineNumbers: true,
-        theme: "neo",
-        mode: "phiSyntax",
-        indentUnit: 4,
-        extraKeys: {
-            "Ctrl-S": (cm) => { saveFile(); },
-            "Cmd-S": (cm) => { saveFile(); },
-            "Ctrl-Space": "autocomplete",
-
-            // Intelligent Wrapping Logic
-            "'('": (cm) => wrapSelection(cm, '(', ')'),
-            "'['": (cm) => wrapSelection(cm, '[', ']'),
-            "'{'": (cm) => wrapSelection(cm, '{', '}'),
-            "'\"'": (cm) => wrapSelection(cm, '"', '"'),
-            "'\''": (cm) => wrapSelection(cm, "'", "'")
-        }
-    });
-    function wrapSelection(cm, open, close) {
-        if (cm.somethingSelected()) {
-            const selections = cm.listSelections();
-            cm.operation(() => {
-                selections.forEach(sel => {
-                    const text = cm.getRange(sel.anchor, sel.head);
-                    cm.replaceRange(open + text + close, sel.from(), sel.to());
-                });
-            });
-        } else {
-            // No selection? Just auto-pair and move cursor inside
-            cm.replaceSelection(open + close);
-            const cur = cm.getCursor();
-            cm.setCursor(cur.line, cur.ch - close.length);
-        }
-    }
-    // Autocomplete Trigger
-    editor.on("inputRead", function(cm, change) {
-        if (change.text[0] === " " || change.text[0] === "") return;
-        cm.showHint({
-            hint: (cm) => {
-                const cursor = cm.getCursor();
-                const line = cm.getLine(cursor.line);
-                let start = cursor.ch;
-                while (start > 0 && /\w/.test(line.charAt(start - 1))) start--;
-                const currentWord = line.slice(start, cursor.ch);
-                const list = ALL_SUGGESTIONS.filter(w => w.startsWith(currentWord));
-                return { list, from: CodeMirror.Pos(cursor.line, start), to: cursor };
-            },
-            completeSingle: false
-        });
-    });
-
-    // --- 3. Logic ---
-    let activeFile = "";
-    let autoSaveTimeout = null;
-
-    function updateStatus(text, type = '') {
-        const el = document.getElementById('save-status');
-        el.innerText = text;
-        el.className = 'status-tag ' + type;
-    }
-
-    editor.on("change", () => {
-        if (!activeFile) return;
-        updateStatus("Modified", "status-saving");
-        clearTimeout(autoSaveTimeout);
-        autoSaveTimeout = setTimeout(() => { saveFile(true); }, 3000);
-    });
-    async function saveFile(silent = false) {
-        if (!activeFile) return;
-        if (!silent) updateStatus("Saving...", "status-saving");
-        try {
-            // 1. Create a Blob to ensure the data is treated as raw bytes
-            const codeContent = editor.getValue();
-            const blob = new Blob([codeContent], { type: 'text/plain' });
-
-            const res = await fetch(`/save?name=${encodeURIComponent(activeFile)}`, {
-                method: 'POST',
-                // 2. Explicitly set Content-Type to avoid auto-parsing of '='
-                headers: {
-                    'Content-Type': 'application/octet-stream'
-                },
-                body: blob
-            });
-
-            if (res.ok) {
-                updateStatus("Saved", "status-saved");
-                setTimeout(() => {
-                    if(document.getElementById('save-status').innerText === "Saved")
-                        updateStatus("Ready");
-                }, 2000);
-            } else {
-                updateStatus("Save Failed", "status-error");
-            }
-        } catch (e) {
-            updateStatus("Offline", "");
-        }
-    }
-
-    async function openFile(name) {
-        if (activeFile && activeFile !== name) await saveFile(true);
-        activeFile = name;
-        try {
-            const res = await fetch(`/read?name=${encodeURIComponent(name)}`);
-            const content = await res.text();
-            editor.setValue(content);
-            updateStatus("Editing: " + name);
-            loadFileList();
-            setTimeout(() => editor.refresh(), 10);
-        } catch (e) { console.error(e); }
-    }
-
-    async function loadFileList() {
-        try {
-            const res = await fetch('/list');
-            const files = await res.json();
-            const container = document.getElementById('file-list');
-
-            container.innerHTML = files.map(f => `
-            <div class="file-item ${f === activeFile ? 'active' : ''}" onclick="openFile('${f}')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.6; margin-right:10px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span style="flex-grow:1">${f}</span>
-                <div class="file-actions">
-                    <div class="icon-btn" onclick="renameFile(event, '${f}')">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    </div>
-                    <div class="icon-btn" onclick="deleteFile(event, '${f}')" style="color:#e53e3e">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-            return files; // Return the list of files for the onload function
-        } catch (e) { console.error(e); return []; }
-    }
-
-    async function newFile() {
-        const name = prompt("Filename:");
-        if (name) {
-            activeFile = name.endsWith('.ezra') ? name : name + '.ezra';
-            editor.setValue("// " + activeFile);
-            await saveFile();
-            loadFileList();
-        }
-    }
 
     async function renameFile(e, oldN) {
         e.stopPropagation();
@@ -5795,17 +5674,196 @@
             loadFileList();
         }
     }
+    // --- 2. Initialize Editor ---
+    var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+        lineNumbers: true, theme: "neo", mode: "phiSyntax", indentUnit: 4,
+        extraKeys: {
+            "Ctrl-S": (cm) => saveFile(), "Cmd-S": (cm) => saveFile(),
+            "Ctrl-Space": "autocomplete",
+            "'('": (cm) => wrapSelection(cm, '(', ')'), "'['": (cm) => wrapSelection(cm, '[', ']'),
+            "'{'": (cm) => wrapSelection(cm, '{', '}'), "'\"'": (cm) => wrapSelection(cm, '"', '"')
+        }
+    });
+
+    function wrapSelection(cm, open, close) {
+        if (cm.somethingSelected()) {
+            const selections = cm.listSelections();
+            cm.operation(() => {
+                selections.forEach(sel => {
+                    const text = cm.getRange(sel.anchor, sel.head);
+                    cm.replaceRange(open + text + close, sel.from(), sel.to());
+                });
+            });
+        } else {
+            cm.replaceSelection(open + close);
+            const cur = cm.getCursor(); cm.setCursor(cur.line, cur.ch - close.length);
+        }
+    }
+
+    editor.on("inputRead", function(cm, change) {
+        if (change.text[0] === " " || change.text[0] === "") return;
+        cm.showHint({
+            hint: (cm) => {
+                const cursor = cm.getCursor();
+                const line = cm.getLine(cursor.line);
+                let start = cursor.ch;
+                while (start > 0 && /\w/.test(line.charAt(start - 1))) start--;
+                const currentWord = line.slice(start, cursor.ch);
+                const list = ALL_SUGGESTIONS.filter(w => w.startsWith(currentWord));
+                return { list, from: CodeMirror.Pos(cursor.line, start), to: cursor };
+            },
+            completeSingle: false
+        });
+    });
+
+    async function renameCurrentDevice() {
+        if (!selectedMac) return alert("Select a device first");
+
+        // Get the current name from the dropdown text to use as a default
+        const select = document.getElementById('active-device');
+        const currentText = select.options[select.selectedIndex].text;
+
+        const newName = prompt(`Enter a nickname for device ${selectedMac}:`, currentText.split(' (')[0]);
+
+        if (newName && newName !== currentText) {
+            try {
+                updateStatus("Renaming...", "status-saving");
+                const res = await fetch(`/rename-device?mac=${encodeURIComponent(selectedMac)}&name=${encodeURIComponent(newName)}`);
+
+                if (res.ok) {
+                    updateStatus("Device Renamed", "status-saved");
+                    await refreshDevices(); // Refresh list to show new name
+                } else {
+                    updateStatus("Rename Failed", "status-error");
+                }
+            } catch (e) {
+                console.error("Error renaming device:", e);
+            }
+        }
+    }
+    // --- 3. Logic & Device Management ---
+    let activeFile = "";
+    let selectedMac = "";
+    let autoSaveTimeout = null;
+
+    function updateStatus(text, type = '') {
+        const el = document.getElementById('save-status');
+        el.innerText = text;
+        el.className = 'status-tag ' + type;
+    }
+
+    async function refreshDevices() {
+        try {
+            const res = await fetch('/list-devices');
+            const devices = await res.json();
+            const select = document.getElementById('active-device');
+
+            if (!devices || devices.length === 0) {
+                select.innerHTML = '<option value="">No Devices Found</option>';
+                return;
+            }
+
+            select.innerHTML = devices.map(d => {
+                // Primary text: The nickname (or the MAC if no nickname exists)
+                const mainName = d.name || d.mac;
+
+                // Secondary text: The MAC address in brackets
+                const subDetail = d.mac;
+
+                return `
+                <option value="${d.mac}" ${d.mac === selectedMac ? 'selected' : ''}>
+                    ${mainName} (${subDetail})
+                </option>
+            `;
+            }).join('');
+
+            if (!selectedMac && devices.length > 0) {
+                selectedMac = devices[0].mac;
+            }
+        } catch (e) {
+            console.warn("Device list unavailable");
+        }
+    }
+
+    editor.on("change", () => {
+        if (!activeFile) return;
+        updateStatus("Modified", "status-saving");
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(() => { saveFile(true); }, 3000);
+    });
+
+    async function saveFile(silent = false) {
+
+        if (!activeFile) return;
+        if (!silent) updateStatus("Saving...", "status-saving");
+        try {
+            const codeContent = editor.getValue();
+            const blob = new Blob([codeContent], { type: 'text/plain' });
+            const res = await fetch(`/save?name=${encodeURIComponent(activeFile)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/octet-stream' },
+                body: blob
+            });
+            if (res.ok) {
+                const el = document.getElementById('save-status');
+                updateStatus("Saved", "status-saved");
+                setTimeout(() => { if(el.innerText === "Saved") updateStatus("Ready"); }, 2000);
+            }
+        } catch (e) { updateStatus("Offline", ""); }
+    }
+
+    async function openFile(name) {
+        if (activeFile && activeFile !== name) await saveFile(true);
+        activeFile = name;
+        try {
+            const res = await fetch(`/read?name=${encodeURIComponent(name)}`);
+            editor.setValue(await res.text());
+            updateStatus("Editing: " + name);
+            loadFileList();
+            setTimeout(() => editor.refresh(), 10);
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadFileList() {
+        try {
+            const res = await fetch('/list');
+            const files = await res.json();
+            const container = document.getElementById('file-list');
+            container.innerHTML = files.map(f => `
+                <div class="file-item ${f === activeFile ? 'active' : ''}" onclick="openFile('${f}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.6; margin-right:10px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span style="flex-grow:1">${f}</span>
+                    <div class="file-actions">
+                        <div class="icon-btn" onclick="renameFile(event, '${f}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+                        <div class="icon-btn" onclick="deleteFile(event, '${f}')" style="color:#e53e3e"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+                    </div>
+                </div>
+            `).join('');
+            return files;
+        } catch (e) { return []; }
+    }
 
     function runCode() {
         if (!activeFile) return alert("Select a file");
-        fetch(`/run?name=${encodeURIComponent(activeFile)}`);
+        if (!selectedMac) return alert("No device selected");
+        fetch(`/run?name=${encodeURIComponent(activeFile)}&mac=${encodeURIComponent(selectedMac)}`);
+        updateStatus("Sent to " + selectedMac, "status-saved");
+    }
+
+    async function newFile() {
+        const name = prompt("Filename:");
+        if (name) {
+            activeFile = name.endsWith('.ezra') ? name : name + '.ezra';
+            editor.setValue("// " + activeFile);
+            await saveFile(); loadFileList();
+        }
     }
 
     window.onload = async () => {
         const files = await loadFileList();
-        if (files.length > 0) {
-            openFile(files[0]); // Automatically open the first file in the list
-        }
+        if (files.length > 0) openFile(files[0]);
+        refreshDevices();
+        setInterval(refreshDevices, 5000); // Keep device list fresh
         setTimeout(() => editor.refresh(), 100);
     };
 </script>

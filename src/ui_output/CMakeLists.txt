@@ -5,6 +5,7 @@ SET(SOURCES ui_WaterParkStart.c
     ui_FerisWheel.c
     ui_BlackMamba.c
     ui_SudoMode.c
+    ui_SplashScreen.c
     ui.c
     ui_comp_hook.c
     ui_helpers.c

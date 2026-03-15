@@ -50,18 +50,100 @@ const char *nouns[] = {
     "Fern",
     "Moss"
 };
-String DovetailSystem::lastRunFile;
 String DovetailSystem::ssid = "Dovetail-ERROR-SD-NOT-INSERTED!";
 
 const char *password = "Phisiland";
 
+std::map<String, IPAddress> macToIp;
+std::map<String, String> macToName;
+std::map<String, String> macToCode;
 
-// A map to store: Domain Name -> Client IP
-std::map<String, IPAddress> customDomains;
+
+#include <ArduinoJson.h>
+#include <SD.h>
+bool DovetailSystem::needsSave = false;
+#include <ArduinoJson.h>
+#include <SD.h>
+
+void DovetailSystem::saveRegistryToSD() {
+    if (!needsSave) return;
+    JsonDocument doc;
+
+    // We use macToCode as the primary loop because every registered
+    // device should have a code assignment (even if it's "default.ezra")
+    for (auto const &[mac, code]: macToCode) {
+        doc[mac]["code"] = code;
+
+        // Check if this MAC also has a nickname in nameToMac
+        // We iterate through nameToMac to find the matching MAC
+        for (auto const &[m, name]: macToName) {
+            if (m == mac) {
+                doc[mac]["name"] = name;
+                break;
+            }
+        }
+    }
+
+    File file = SD.open("/config.json", FILE_WRITE);
+    if (!file) {
+        Serial.println("Failed to open config for writing");
+        return;
+    }
+
+    serializeJson(doc, file);
+    file.close();
+    needsSave = false;
+    Serial.println("Phisiland config saved to SD.");
+}
+
+void DovetailSystem::loadRegistryFromSD() {
+    if (!SD.exists("/config.json")) {
+        Serial.println("ℹ️ config.json not found. Initializing empty file.");
+        saveRegistryToSD();
+        return;
+    }
+
+    File file = SD.open("/config.json", FILE_READ);
+    if (file.size() == 0) {
+        file.close();
+        return;
+    }
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, file);
+    file.close();
+
+    if (error) {
+        Serial.printf("❌ JSON Parse Error: %s\n", error.c_str());
+        return;
+    }
+
+    // Clear current RAM maps to prevent data duplication/stale entries
+    macToName.clear();
+    macToCode.clear();
+
+    JsonObject root = doc.as<JsonObject>();
+    for (JsonPair p: root) {
+        String mac = p.key().c_str(); // MAC is the primary key in JSON
+        JsonObject data = p.value();
+
+        // Restore macToCode Map
+        if (data.containsKey("code")) {
+            macToCode[mac] = data["code"].as<String>();
+        }
+
+        // Restore nameToMac Map (Name is Key, MAC is Value)
+        if (data.containsKey("name")) {
+            String name = data["name"].as<String>();
+            macToName[mac] = name;
+        }
+    }
+    Serial.printf("✅ Successfully loaded %d devices from SD.\n", (int) macToCode.size());
+}
+
 DNSServer DovetailSystem::dnsServer;
 
 
-int selectedCodeBase = 0;
 AsyncWebServer DovetailSystem::server = {80};
 bool DovetailSystem::connectMode = false;
 
@@ -75,32 +157,55 @@ void DovetailSystem::kickUser(uint8_t aid) {
         Serial.printf("Error kicking user: %s\n", esp_err_to_name(err));
     }
 }
+// 1. Define a struct to pass multiple pieces of data to the task
+struct MessageData {
+    String ip;
+    String message;
+};
 
-void DovetailSystem::sendMessage(const String &message) {
+// 2. This is the background worker
+void sendMessageTask(void *pvParameters) {
+    // Take ownership of the parameters
+    auto *data = (MessageData *)pvParameters;
+
     HTTPClient http;
+    String url = "http://" + data->ip + "/" + data->message;
 
-    String serverPath = "http://" + customDomains["core.it"].toString() + "/" + message;
+    // Set a short timeout so a dead client doesn't hang the task for 30s
+    http.setTimeout(2000);
 
-    // Your Domain name with URL path or IP address with path
-    http.begin(serverPath.c_str());
-
-    // If you need Node-RED/server authentication, insert user and password below
-    //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
-
-    // Send HTTP GET request
-    int httpResponseCode = http.GET();
-
-    if (httpResponseCode > 0) {
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-        String payload = http.getString();
-        Serial.println(payload);
-    } else {
-        Serial.print("Error code: ");
-        Serial.println(httpResponseCode);
+    if (http.begin(url)) {
+        int httpCode = http.GET();
+        if (httpCode > 0) {
+            Serial.printf("[HTTP] %s response: %d\n", data->ip.c_str(), httpCode);
+        } else {
+            Serial.printf("[HTTP] %s failed: %s\n", data->ip.c_str(), http.errorToString(httpCode).c_str());
+        }
+        http.end();
     }
-    // Free resources
-    http.end();
+
+    // CLEANUP: Delete the struct and the task itself
+    delete data;
+    vTaskDelete(NULL);
+}
+
+// 3. The new non-blocking sendMessage
+void DovetailSystem::sendMessage(const String &mac, const String &message) {
+    if (macToIp.count(mac) == 0) {
+        Serial.println("Error: MAC not found in IP map.");
+        return;
+    }
+
+    // Create a new data object on the heap
+    auto *data = new MessageData();
+    data->ip = macToIp[mac].toString();
+    data->message = message;
+
+    // Launch background task
+    // Stack size 4096 is usually safe for HTTPClient
+    xTaskCreate(sendMessageTask, "SendMsg", 4096, (void*)data, 1, NULL);
+
+    Serial.println("Message queued in background for " + mac);
 }
 
 void DovetailSystem::initWifiName() {
@@ -122,15 +227,6 @@ void DovetailSystem::initWifiName() {
         f.close();
         Serial.println("Stored wifi name: " + newWifiName);
         ssid = newWifiName;
-    }
-}
-
-void DovetailSystem::saveLastRun(const String &filename) {
-    File f = SD.open("/last_run.txt", FILE_WRITE);
-    if (f) {
-        f.print(filename);
-        f.close();
-        Serial.println("Stored last run: " + filename);
     }
 }
 
@@ -157,6 +253,7 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
             if (Store::allowedMacs.count(macStr) > 0) {
                 Serial.println("Exists!");
                 updateDeviceCount();
+
                 break;
             }
 
@@ -166,6 +263,7 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
                 break;
             }
             updateDeviceCount();
+
             Store::allowedMacs.insert(macStr);
             Store::saveToMacList();
             break;
@@ -184,26 +282,6 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
         default:
             break;
     }
-}
-
-String getLastRun() {
-    if (SD.exists("/last_run.txt")) {
-        File f = SD.open("/last_run.txt", FILE_READ);
-        if (f) {
-            String lastFile = f.readString();
-            f.close();
-
-            // debug::log("Resuming last script: " + lastFile);
-
-            // Re-use your existing read logic to get the code and run it
-            String path = "/scripts/" + lastFile;
-            if (SD.exists(path)) {
-                return path;
-            }
-        }
-    }
-
-    return "Not found!";
 }
 
 struct FileWritePacket {
@@ -230,6 +308,9 @@ void sdWorkerTask(void *pvParameters) {
         }
     }
 }
+
+
+
 
 void DovetailSystem::defineRoutes() {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -281,6 +362,35 @@ void DovetailSystem::defineRoutes() {
             }
         }
     });
+    server.on("/list-devices", HTTP_GET, [](AsyncWebServerRequest *request) {
+        JsonDocument doc;
+
+        // Flatten the object into an array for the frontend
+        JsonDocument responseDoc;
+        JsonArray array = responseDoc.to<JsonArray>();
+
+        for (auto &v: macToIp) {
+            auto &mac = v.first;
+            auto &ip = v.second;
+            JsonObject device = array.add<JsonObject>();
+            device["mac"] = mac;
+            device["ip"] = ip;
+            device["name"] = macToName[mac]; // Use MAC as name if empty
+        }
+
+        String output;
+        serializeJson(responseDoc, output);
+        request->send(200, "application/json", output);
+    });
+    server.on("/rename-device", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("mac") && request->hasParam("name")) {
+            String mac = request->getParam("mac")->value();
+            String name = request->getParam("name")->value();
+            macToName[mac] = name;
+            needsSave = true;
+            request->send(200, "text/plain", "Renamed");
+        }
+    });
     // 1. DELETE FILE
     server.on("/delete", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("name")) {
@@ -319,7 +429,18 @@ void DovetailSystem::defineRoutes() {
     // 4. SEND PREDEFINED FILE
     server.on("/code", HTTP_GET, [](AsyncWebServerRequest *request) {
         // String path = getLastRun(); // Your predefined file path
-        String path = lastRunFile;
+        if (!request->hasParam("mac")) {
+            request->send(500, "text/plain", "Mac address not provided!");
+
+            return;
+        }
+        String path = "/scripts/";
+        if (macToCode.count(request->getParam("mac")->value())) {
+            path += macToCode[request->getParam("mac")->value()];
+        } else {
+            path += "waterslide.ezra";
+        }
+        Serial.println(path);
         if (SD.exists(path)) {
             // Send the file. "text/plain" is usually best for code/scripts
             request->send(SD, path, "text/plain");
@@ -329,14 +450,27 @@ void DovetailSystem::defineRoutes() {
         }
     });
     server.on("/run", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (request->hasParam("name")) {
+        if (request->hasParam("name") && request->hasParam("mac")) {
             String filename = request->getParam("name")->value();
+            String deviceId = request->getParam("mac")->value(); // This is the MAC
 
-            // 1. Save this name for next time
-            saveLastRun(filename);
+            // 1. Save locally so the Master knows what it last deployed
+            Serial.println("Running for device '" + deviceId + "' with " + String(macToIp.count(deviceId)));
 
-            sendMessage("reset");
-            request->send(200, "text/plain", "Running and Saved: " + filename);
+            // 2. Lookup the IP for this specific device
+            // If you are using a std::map<String, IPAddress> macToIp:
+            if (macToIp.count(deviceId)) {
+                // IPAddress targetIP = macToIp[deviceId];
+
+                // 3. Send the message to the specific device
+                // Assuming sendMessage handles the IP routing
+                sendMessage(deviceId, "reset");
+                macToCode[deviceId] = filename;
+                needsSave = true;
+                request->send(200, "text/plain", "Deploying " + filename + " to " + deviceId);
+            } else {
+                request->send(404, "text/plain", "Device not found or offline");
+            }
         }
     });
     server.on("/sendResult", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -376,19 +510,20 @@ void DovetailSystem::defineRoutes() {
         }
     });
     server.on("/register", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (request->hasParam("domain")) {
-            String domain = request->getParam("domain")->value();
-            IPAddress clientIP = request->client()->remoteIP();
-
-            customDomains[domain] = clientIP;
-
-            // We tell the DNS server to start resolving this specific domain
-            dnsServer.start(53, domain, clientIP);
-            Serial.println("Registered ip of:" + clientIP.toString() + " as " + domain);
-            request->send(200, "text/plain", "Registered " + domain + " to " + clientIP.toString());
-        } else {
-            request->send(400, "text/plain", "Missing domain param");
+        if (!request->hasParam("mac")) {
+            request->send(400, "text/plain", "Missing mac address for registration!");
+            return;
         }
+
+        const auto mac = request->getParam("mac")->value();
+        macToIp[mac] = request->client()->remoteIP();
+        Serial.println("Registered mac to ip");
+        if (!macToCode.count(mac)) {
+            macToCode[mac] = "waterslide.ezra";
+            macToName[mac] = mac;
+            needsSave = true;
+        }
+        request->send(200, "text/plain", "Registered IP!");
     });
 }
 
@@ -399,7 +534,7 @@ void DovetailSystem::init() {
     WiFi.onEvent(wifiEvent);
     esp_wifi_set_inactive_time(WIFI_IF_AP, 10);
     sdQueue = xQueueCreate(10, sizeof(FileWritePacket));
-
+    loadRegistryFromSD();
     xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
 
     if (!SD.exists("/scripts")) {
@@ -408,7 +543,6 @@ void DovetailSystem::init() {
     defineRoutes();
     dnsServer.start(53, "am.it", WiFi.softAPIP());
 
-    lastRunFile = getLastRun();
     server.begin();
 }
 

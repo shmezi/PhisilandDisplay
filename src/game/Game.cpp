@@ -22,7 +22,7 @@
 String Game::screen = "water";
 
 void Game::onResetButton(lv_event_t *e) {
-    DovetailSystem::sendMessage("reset");
+    DovetailSystem::sendMessage("core", "reset");
 }
 
 //START / STOP BUTTON!
@@ -31,17 +31,17 @@ void Game::onStartButton(lv_event_t *e) {
           lv_obj_has_state(ui_StartStop2, LV_STATE_CHECKED))) {
         Serial.print("~-1");
 
-        DovetailSystem::sendMessage("event?val=-1");
+        DovetailSystem::sendMessage("core", "event?val=-1");
         return;
     }
     if (screen == "water")
-        DovetailSystem::sendMessage("event?val=-2");
+        DovetailSystem::sendMessage("core", "event?val=-2");
     if (screen == "swings")
-        DovetailSystem::sendMessage("event?val=" + String(lv_arc_get_value(ui_SpeedControl1)));
+        DovetailSystem::sendMessage("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl1)));
     if (screen == "blackmamba")
-        DovetailSystem::sendMessage("event?val=" + String(lv_arc_get_value(ui_SpeedControl2)));
+        DovetailSystem::sendMessage("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl2)));
     if (screen == "ferriswheel")
-        DovetailSystem::sendMessage("event?val=" + String(lv_arc_get_value(ui_SpeedControl3)));
+        DovetailSystem::sendMessage("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl3)));
 }
 
 void Game::setCurrentScreen() {
