@@ -32,10 +32,10 @@ lv_disp_set_theme(dispp, theme);
 ui_WaterParkStart_screen_init();
 ui_GraphResults_screen_init();
 ui_SwingStart_screen_init();
-ui_BlackMambaStart_screen_init();
 ui_FileSelection_screen_init();
 ui_FerisWheel_screen_init();
-ui_Screen1_screen_init();
+ui_BlackMamba_screen_init();
+ui_SudoMode_screen_init();
 ui____initial_actions0 = lv_obj_create(NULL);
 lv_disp_load_scr( ui_WaterParkStart);
 }
@@ -44,8 +44,8 @@ void ui_destroy( void )
 {ui_WaterParkStart_screen_destroy();
 ui_GraphResults_screen_destroy();
 ui_SwingStart_screen_destroy();
-ui_BlackMambaStart_screen_destroy();
 ui_FileSelection_screen_destroy();
 ui_FerisWheel_screen_destroy();
-ui_Screen1_screen_destroy();
+ui_BlackMamba_screen_destroy();
+ui_SudoMode_screen_destroy();
 }

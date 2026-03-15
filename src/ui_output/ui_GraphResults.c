@@ -7,6 +7,14 @@
 
 lv_obj_t *ui_GraphResults = NULL;lv_obj_t *ui_Image8 = NULL;lv_obj_t *ui_Chart1 = NULL;lv_obj_t *ui_Chart1_Xaxis = NULL;lv_obj_t *ui_Chart1_Yaxis1 = NULL;lv_obj_t *ui_Chart1_Yaxis2 = NULL;lv_obj_t *ui_Label5 = NULL;lv_obj_t *ui_Image9 = NULL;
 // event funtions
+void ui_event_Image8( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_SudoMode, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_SudoMode_screen_init);
+}
+}
+
 void ui_event_Image9( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
@@ -112,6 +120,7 @@ lv_obj_set_ext_click_area(ui_Image9, 15);
 lv_obj_add_flag( ui_Image9, LV_OBJ_FLAG_CLICKABLE );   /// Flags
 lv_obj_remove_flag( ui_Image9, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
+lv_obj_add_event_cb(ui_Image8, ui_event_Image8, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image9, ui_event_Image9, LV_EVENT_ALL, NULL);
 
 }

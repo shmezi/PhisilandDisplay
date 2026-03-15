@@ -14,6 +14,7 @@ extern "C" {
 extern void ui_GraphResults_screen_init(void);
 extern void ui_GraphResults_screen_destroy(void);
 extern lv_obj_t *ui_GraphResults;
+extern void ui_event_Image8( lv_event_t * e);
 extern lv_obj_t *ui_Image8;
 extern lv_obj_t *ui_Chart1;
 extern lv_obj_t *ui_Chart1_Xaxis;

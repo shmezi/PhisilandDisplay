@@ -14,22 +14,19 @@ extern "C" {
 extern void ui_WaterParkStart_screen_init(void);
 extern void ui_WaterParkStart_screen_destroy(void);
 extern lv_obj_t *ui_WaterParkStart;
-extern void ui_event_StartStop( lv_event_t * e);
-extern lv_obj_t *ui_StartStop;
-extern lv_obj_t *ui_StartStopLabel;
-extern lv_obj_t *ui_SensorAFrame;
-extern lv_obj_t *ui_SensorAValue;
-extern lv_obj_t *ui_SensorBFrame;
-extern lv_obj_t *ui_SensorBValue;
+extern lv_obj_t *ui_BContainer;
+extern lv_obj_t *ui_SensorBFrame3;
+extern lv_obj_t *ui_SensorCValue;
+extern lv_obj_t *ui_Label1;
 extern void ui_event_Image7( lv_event_t * e);
 extern lv_obj_t *ui_Image7;
 extern void ui_event_logo( lv_event_t * e);
 extern lv_obj_t *ui_logo;
-extern lv_obj_t *ui_SensorBFrame3;
-extern lv_obj_t *ui_SensorCValue;
-extern lv_obj_t *ui_Label6;
-extern lv_obj_t *ui_Label1;
-extern lv_obj_t *ui_Label2;
+extern lv_obj_t *ui_AContainer;
+extern lv_obj_t *ui_SensorBFrame4;
+extern lv_obj_t *ui_SensorCValue1;
+extern lv_obj_t *ui_ALabel;
+extern lv_obj_t *ui_WaterSlide_Label;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

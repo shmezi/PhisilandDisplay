@@ -29,10 +29,10 @@ extern "C" {
 #include "ui_WaterParkStart.h"
 #include "ui_GraphResults.h"
 #include "ui_SwingStart.h"
-#include "ui_BlackMambaStart.h"
 #include "ui_FileSelection.h"
 #include "ui_FerisWheel.h"
-#include "ui_Screen1.h"
+#include "ui_BlackMamba.h"
+#include "ui_SudoMode.h"
 
 ///////////////////// VARIABLES ////////////////////
 

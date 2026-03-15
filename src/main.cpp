@@ -6,20 +6,30 @@
 #include "dovetail/DovetailSystem.h"
 #include "game/Game.h"
 #include "store/Store.h"
+#include "ui_output/ui_FileSelection.h"
+#include "ui_output/ui_SudoMode.h"
 
 extern "C" {
 void onStartButton(lv_event_t *e) {
     Game::onStartButton(e);
 }
-    void onResetButton(lv_event_t *e) {
+
+void onResetButton(lv_event_t *e) {
     Game::onResetButton(e);
+}
+
+void validateSudoCode(lv_event_t *e) {
+    const auto text = String(lv_textarea_get_text(ui_Code));
+    if (text == "314159") {
+        lv_disp_load_scr(ui_FileSelection);
+    }
 }
 
 void onBackButton(lv_event_t *e) {
     Game::onBackButton(e);
 }
-    void connectBT(lv_event_t *e) {
 
+void connectBT(lv_event_t *e) {
     DovetailSystem::connection();
 }
 }
@@ -32,8 +42,6 @@ void setup() {
 
     DovetailSystem::init();
     Display::innit();
-
-
 
 
     Serial.println("Setup done");

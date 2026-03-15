@@ -1,10 +1,10 @@
 ui_WaterParkStart.c
 ui_GraphResults.c
 ui_SwingStart.c
-ui_BlackMambaStart.c
 ui_FileSelection.c
 ui_FerisWheel.c
-ui_Screen1.c
+ui_BlackMamba.c
+ui_SudoMode.c
 ui.c
 ui_comp_hook.c
 ui_helpers.c

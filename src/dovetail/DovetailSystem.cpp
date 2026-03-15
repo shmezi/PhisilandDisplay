@@ -13,6 +13,8 @@
 
 #include "game/Game.h"
 #include "store/Store.h"
+#include "ui_output/ui_FileSelection.h"
+#include "widgets/label/lv_label.h"
 const char *verbs[] = {
     "Carve",
     "Shape",
@@ -118,7 +120,7 @@ void DovetailSystem::initWifiName() {
     if (f) {
         f.print(newWifiName);
         f.close();
-        Serial.println("Stored wifiname: " + newWifiName);
+        Serial.println("Stored wifi name: " + newWifiName);
         ssid = newWifiName;
     }
 }
@@ -130,6 +132,13 @@ void DovetailSystem::saveLastRun(const String &filename) {
         f.close();
         Serial.println("Stored last run: " + filename);
     }
+}
+
+void DovetailSystem::updateDeviceCount() {
+    const uint8_t numStations = WiFi.softAPgetStationNum();
+    String text = "Connected clients: ";
+    text += String(numStations);
+    lv_label_set_text(ui_ConnectedLabel, text.c_str());
 }
 
 void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
@@ -147,6 +156,7 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
 
             if (Store::allowedMacs.count(macStr) > 0) {
                 Serial.println("Exists!");
+                updateDeviceCount();
                 break;
             }
 
@@ -155,7 +165,7 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
                 kickUser(aid);
                 break;
             }
-
+            updateDeviceCount();
             Store::allowedMacs.insert(macStr);
             Store::saveToMacList();
             break;
@@ -167,6 +177,12 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
             Serial.println(WiFi.macAddress());
             break;
         }
+        case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED: {
+            updateDeviceCount();
+
+        }
+        default:
+            break;
     }
 }
 

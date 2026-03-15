@@ -5,7 +5,7 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_FerisWheel = NULL;lv_obj_t *ui_Speed3 = NULL;lv_obj_t *ui_SpeedControl3 = NULL;lv_obj_t *ui_StartStop4 = NULL;lv_obj_t *ui_StartStopLabel4 = NULL;lv_obj_t *ui_SensorAFrame3 = NULL;lv_obj_t *ui_SensorAValue3 = NULL;lv_obj_t *ui_SensorBFrame2 = NULL;lv_obj_t *ui_SensorBValue2 = NULL;lv_obj_t *ui_DataResult1 = NULL;lv_obj_t *ui_Image3 = NULL;lv_obj_t *ui_logo4 = NULL;
+lv_obj_t *ui_FerisWheel = NULL;lv_obj_t *ui_Speed3 = NULL;lv_obj_t *ui_SpeedControl3 = NULL;lv_obj_t *ui_StartStop4 = NULL;lv_obj_t *ui_StartStopLabel4 = NULL;lv_obj_t *ui_SensorAFrame3 = NULL;lv_obj_t *ui_SensorAValue3 = NULL;lv_obj_t *ui_SensorBFrame2 = NULL;lv_obj_t *ui_SensorBValue2 = NULL;lv_obj_t *ui_Image3 = NULL;lv_obj_t *ui_logo4 = NULL;
 // event funtions
 void ui_event_SpeedControl3( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
@@ -30,7 +30,15 @@ void ui_event_Image3( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
 if ( event_code == LV_EVENT_CLICKED) {
-      _ui_screen_change( &ui_GraphResults, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_GraphResults_screen_init);
+      _ui_screen_change( &ui_GraphResults, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_GraphResults_screen_init);
+}
+}
+
+void ui_event_logo4( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_SudoMode, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_SudoMode_screen_init);
 }
 }
 
@@ -115,13 +123,7 @@ ui_SensorBValue2 = lv_label_create(ui_SensorBFrame2);
 lv_obj_set_width( ui_SensorBValue2, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_SensorBValue2, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_SensorBValue2, LV_ALIGN_CENTER );
-lv_label_set_text(ui_SensorBValue2,"45°");
-
-ui_DataResult1 = lv_label_create(ui_FerisWheel);
-lv_obj_set_x( ui_DataResult1, 5 );
-lv_obj_set_y( ui_DataResult1, -98 );
-lv_obj_set_align( ui_DataResult1, LV_ALIGN_CENTER );
-lv_label_set_text(ui_DataResult1,"5 spins");
+lv_label_set_text(ui_SensorBValue2,"5 spins");
 
 ui_Image3 = lv_image_create(ui_FerisWheel);
 lv_image_set_src(ui_Image3, &ui_img_statistics_png);
@@ -145,6 +147,7 @@ lv_obj_remove_flag( ui_logo4, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_add_event_cb(ui_SpeedControl3, ui_event_SpeedControl3, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_StartStop4, ui_event_StartStop4, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image3, ui_event_Image3, LV_EVENT_ALL, NULL);
+lv_obj_add_event_cb(ui_logo4, ui_event_logo4, LV_EVENT_ALL, NULL);
 
 }
 
@@ -162,7 +165,6 @@ ui_SensorAFrame3= NULL;
 ui_SensorAValue3= NULL;
 ui_SensorBFrame2= NULL;
 ui_SensorBValue2= NULL;
-ui_DataResult1= NULL;
 ui_Image3= NULL;
 ui_logo4= NULL;
 

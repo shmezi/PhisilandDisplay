@@ -37,6 +37,8 @@ public:
 
     static void saveLastRun(const String &filename);
 
+    static void updateDeviceCount();
+
     static void connection();
 };
 

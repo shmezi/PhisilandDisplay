@@ -10,9 +10,10 @@
 extern "C" {
 #endif
 
-void onStartButton(lv_event_t * e);
 void onBackButton(lv_event_t * e);
+void onStartButton(lv_event_t * e);
 void connectBT(lv_event_t * e);
+void validateSudoCode(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

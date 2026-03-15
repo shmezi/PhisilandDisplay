@@ -3,29 +3,33 @@
 // LVGL version: 9.1.0
 // Project name: SquareLine_Project
 
-#ifndef UI_BLACKMAMBASTART_H
-#define UI_BLACKMAMBASTART_H
+#ifndef UI_BLACKMAMBA_H
+#define UI_BLACKMAMBA_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// SCREEN: ui_BlackMambaStart
-extern void ui_BlackMambaStart_screen_init(void);
-extern void ui_BlackMambaStart_screen_destroy(void);
-extern lv_obj_t *ui_BlackMambaStart;
-extern lv_obj_t *ui_Speed2;
+// SCREEN: ui_BlackMamba
+extern void ui_BlackMamba_screen_init(void);
+extern void ui_BlackMamba_screen_destroy(void);
+extern lv_obj_t *ui_BlackMamba;
 extern void ui_event_SpeedControl2( lv_event_t * e);
 extern lv_obj_t *ui_SpeedControl2;
+extern lv_obj_t *ui_Speed2;
 extern void ui_event_StartStop2( lv_event_t * e);
 extern lv_obj_t *ui_StartStop2;
 extern lv_obj_t *ui_StartStopLabel2;
 extern lv_obj_t *ui_SensorAFrame2;
-extern lv_obj_t *ui_SensorAValue2;
+extern lv_obj_t *ui_BlackMambaSensorAValue;
+extern lv_obj_t *ui_SensorBFrame5;
+extern lv_obj_t *ui_BlackMambaSensorBValue;
 extern void ui_event_Image2( lv_event_t * e);
 extern lv_obj_t *ui_Image2;
 extern void ui_event_logo2( lv_event_t * e);
 extern lv_obj_t *ui_logo2;
+extern lv_obj_t *ui_BlackMambaSensorC;
+extern lv_obj_t *ui_BlackMambaSensorCValue;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

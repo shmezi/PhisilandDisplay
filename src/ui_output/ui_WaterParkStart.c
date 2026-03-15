@@ -5,20 +5,8 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_WaterParkStart = NULL;lv_obj_t *ui_StartStop = NULL;lv_obj_t *ui_StartStopLabel = NULL;lv_obj_t *ui_SensorAFrame = NULL;lv_obj_t *ui_SensorAValue = NULL;lv_obj_t *ui_SensorBFrame = NULL;lv_obj_t *ui_SensorBValue = NULL;lv_obj_t *ui_Image7 = NULL;lv_obj_t *ui_logo = NULL;lv_obj_t *ui_SensorBFrame3 = NULL;lv_obj_t *ui_SensorCValue = NULL;lv_obj_t *ui_Label6 = NULL;lv_obj_t *ui_Label1 = NULL;lv_obj_t *ui_Label2 = NULL;
+lv_obj_t *ui_WaterParkStart = NULL;lv_obj_t *ui_BContainer = NULL;lv_obj_t *ui_SensorBFrame3 = NULL;lv_obj_t *ui_SensorCValue = NULL;lv_obj_t *ui_Label1 = NULL;lv_obj_t *ui_Image7 = NULL;lv_obj_t *ui_logo = NULL;lv_obj_t *ui_AContainer = NULL;lv_obj_t *ui_SensorBFrame4 = NULL;lv_obj_t *ui_SensorCValue1 = NULL;lv_obj_t *ui_ALabel = NULL;lv_obj_t *ui_WaterSlide_Label = NULL;
 // event funtions
-void ui_event_StartStop( lv_event_t * e) {
-    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-
-if ( event_code == LV_EVENT_CLICKED) {
-      _ui_state_modify( ui_StartStop, LV_STATE_CHECKED, _UI_MODIFY_STATE_TOGGLE);
-      _ui_checked_set_text_value( ui_StartStopLabel, target, "Stop", "Start");
-}
-if ( event_code == LV_EVENT_CLICKED) {
-      onStartButton( e );
-}
-}
-
 void ui_event_Image7( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
@@ -31,7 +19,7 @@ void ui_event_logo( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
 
 if ( event_code == LV_EVENT_CLICKED) {
-      _ui_screen_change( &ui_FileSelection, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_FileSelection_screen_init);
+      _ui_screen_change( &ui_SudoMode, LV_SCR_LOAD_ANIM_NONE, 500, 0, &ui_SudoMode_screen_init);
 }
 }
 
@@ -42,56 +30,38 @@ void ui_WaterParkStart_screen_init(void)
 ui_WaterParkStart = lv_obj_create(NULL);
 lv_obj_remove_flag( ui_WaterParkStart, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_StartStop = lv_button_create(ui_WaterParkStart);
-lv_obj_set_width( ui_StartStop, 150);
-lv_obj_set_height( ui_StartStop, 150);
-lv_obj_set_y( ui_StartStop, 32 );
-lv_obj_set_x( ui_StartStop, lv_pct(0) );
-lv_obj_set_align( ui_StartStop, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_StartStop, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
-lv_obj_remove_flag( ui_StartStop, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_radius(ui_StartStop, 100, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_bg_color(ui_StartStop, lv_color_hex(0x54B034), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_StartStop, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_bg_color(ui_StartStop, lv_color_hex(0xBA4646), LV_PART_MAIN | LV_STATE_CHECKED );
-lv_obj_set_style_bg_opa(ui_StartStop, 255, LV_PART_MAIN| LV_STATE_CHECKED);
+ui_BContainer = lv_obj_create(ui_WaterParkStart);
+lv_obj_remove_style_all(ui_BContainer);
+lv_obj_set_width( ui_BContainer, 257);
+lv_obj_set_height( ui_BContainer, 32);
+lv_obj_set_x( ui_BContainer, 0 );
+lv_obj_set_y( ui_BContainer, 6 );
+lv_obj_set_align( ui_BContainer, LV_ALIGN_CENTER );
+lv_obj_remove_flag( ui_BContainer, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_StartStopLabel = lv_label_create(ui_StartStop);
-lv_obj_set_width( ui_StartStopLabel, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_StartStopLabel, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_StartStopLabel, LV_ALIGN_CENTER );
-lv_label_set_text(ui_StartStopLabel,"Start");
+ui_SensorBFrame3 = lv_obj_create(ui_BContainer);
+lv_obj_set_width( ui_SensorBFrame3, 177);
+lv_obj_set_height( ui_SensorBFrame3, 32);
+lv_obj_set_align( ui_SensorBFrame3, LV_ALIGN_CENTER );
+lv_obj_remove_flag( ui_SensorBFrame3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_SensorBFrame3, lv_color_hex(0xB3BFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_SensorBFrame3, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 
-ui_SensorAFrame = lv_obj_create(ui_WaterParkStart);
-lv_obj_set_width( ui_SensorAFrame, 87);
-lv_obj_set_height( ui_SensorAFrame, 32);
-lv_obj_set_x( ui_SensorAFrame, 7 );
-lv_obj_set_y( ui_SensorAFrame, 23 );
-lv_obj_remove_flag( ui_SensorAFrame, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_SensorAFrame, lv_color_hex(0xFFF58A), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_SensorAFrame, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+ui_SensorCValue = lv_label_create(ui_SensorBFrame3);
+lv_obj_set_width( ui_SensorCValue, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_SensorCValue, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_SensorCValue, LV_ALIGN_CENTER );
+lv_label_set_text(ui_SensorCValue,"0ms");
 
-ui_SensorAValue = lv_label_create(ui_SensorAFrame);
-lv_obj_set_width( ui_SensorAValue, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_SensorAValue, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_SensorAValue, LV_ALIGN_CENTER );
-lv_label_set_text(ui_SensorAValue,"0ms");
-
-ui_SensorBFrame = lv_obj_create(ui_WaterParkStart);
-lv_obj_set_width( ui_SensorBFrame, 87);
-lv_obj_set_height( ui_SensorBFrame, 32);
-lv_obj_set_x( ui_SensorBFrame, -7 );
-lv_obj_set_y( ui_SensorBFrame, 23 );
-lv_obj_set_align( ui_SensorBFrame, LV_ALIGN_TOP_RIGHT );
-lv_obj_remove_flag( ui_SensorBFrame, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_SensorBFrame, lv_color_hex(0xB3BFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_SensorBFrame, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_SensorBValue = lv_label_create(ui_SensorBFrame);
-lv_obj_set_width( ui_SensorBValue, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_SensorBValue, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_SensorBValue, LV_ALIGN_CENTER );
-lv_label_set_text(ui_SensorBValue,"0ms");
+ui_Label1 = lv_label_create(ui_BContainer);
+lv_obj_set_width( ui_Label1, 18);
+lv_obj_set_height( ui_Label1, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_Label1, -99 );
+lv_obj_set_y( ui_Label1, 0 );
+lv_obj_set_align( ui_Label1, LV_ALIGN_CENTER );
+lv_label_set_text(ui_Label1,"B");
+lv_obj_set_style_text_align(ui_Label1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_Label1, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_Image7 = lv_image_create(ui_WaterParkStart);
 lv_image_set_src(ui_Image7, &ui_img_statistics_png);
@@ -112,52 +82,49 @@ lv_obj_set_align( ui_logo, LV_ALIGN_BOTTOM_LEFT );
 lv_obj_add_flag( ui_logo, LV_OBJ_FLAG_CLICKABLE );   /// Flags
 lv_obj_remove_flag( ui_logo, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_SensorBFrame3 = lv_obj_create(ui_WaterParkStart);
-lv_obj_set_width( ui_SensorBFrame3, 87);
-lv_obj_set_height( ui_SensorBFrame3, 32);
-lv_obj_set_x( ui_SensorBFrame3, 0 );
-lv_obj_set_y( ui_SensorBFrame3, 23 );
-lv_obj_set_align( ui_SensorBFrame3, LV_ALIGN_TOP_MID );
-lv_obj_remove_flag( ui_SensorBFrame3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_SensorBFrame3, lv_color_hex(0xFFBBE1), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_SensorBFrame3, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+ui_AContainer = lv_obj_create(ui_WaterParkStart);
+lv_obj_remove_style_all(ui_AContainer);
+lv_obj_set_width( ui_AContainer, 257);
+lv_obj_set_height( ui_AContainer, 32);
+lv_obj_set_x( ui_AContainer, 0 );
+lv_obj_set_y( ui_AContainer, -34 );
+lv_obj_set_align( ui_AContainer, LV_ALIGN_CENTER );
+lv_obj_remove_flag( ui_AContainer, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_SensorCValue = lv_label_create(ui_SensorBFrame3);
-lv_obj_set_width( ui_SensorCValue, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_SensorCValue, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_SensorCValue, LV_ALIGN_CENTER );
-lv_label_set_text(ui_SensorCValue,"0ms");
+ui_SensorBFrame4 = lv_obj_create(ui_AContainer);
+lv_obj_set_width( ui_SensorBFrame4, 177);
+lv_obj_set_height( ui_SensorBFrame4, 32);
+lv_obj_set_align( ui_SensorBFrame4, LV_ALIGN_CENTER );
+lv_obj_remove_flag( ui_SensorBFrame4, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_SensorBFrame4, lv_color_hex(0xFFF58A), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_SensorBFrame4, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 
-ui_Label6 = lv_label_create(ui_WaterParkStart);
-lv_obj_set_width( ui_Label6, 87);
-lv_obj_set_height( ui_Label6, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label6, 7 );
-lv_obj_set_y( ui_Label6, 3 );
-lv_label_set_text(ui_Label6,"A");
-lv_obj_set_style_text_align(ui_Label6, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label6, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
+ui_SensorCValue1 = lv_label_create(ui_SensorBFrame4);
+lv_obj_set_width( ui_SensorCValue1, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_SensorCValue1, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_SensorCValue1, LV_ALIGN_CENTER );
+lv_label_set_text(ui_SensorCValue1,"0ms");
 
-ui_Label1 = lv_label_create(ui_WaterParkStart);
-lv_obj_set_width( ui_Label1, 87);
-lv_obj_set_height( ui_Label1, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label1, 0 );
-lv_obj_set_y( ui_Label1, 2 );
-lv_obj_set_align( ui_Label1, LV_ALIGN_TOP_MID );
-lv_label_set_text(ui_Label1,"B");
-lv_obj_set_style_text_align(ui_Label1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label1, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
+ui_ALabel = lv_label_create(ui_AContainer);
+lv_obj_set_width( ui_ALabel, 18);
+lv_obj_set_height( ui_ALabel, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_ALabel, -99 );
+lv_obj_set_y( ui_ALabel, 0 );
+lv_obj_set_align( ui_ALabel, LV_ALIGN_CENTER );
+lv_label_set_text(ui_ALabel,"A");
+lv_obj_set_style_text_align(ui_ALabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_ALabel, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
 
-ui_Label2 = lv_label_create(ui_WaterParkStart);
-lv_obj_set_width( ui_Label2, 87);
-lv_obj_set_height( ui_Label2, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Label2, -7 );
-lv_obj_set_y( ui_Label2, 2 );
-lv_obj_set_align( ui_Label2, LV_ALIGN_TOP_RIGHT );
-lv_label_set_text(ui_Label2,"C");
-lv_obj_set_style_text_align(ui_Label2, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_Label2, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
+ui_WaterSlide_Label = lv_label_create(ui_WaterParkStart);
+lv_obj_set_width( ui_WaterSlide_Label, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_WaterSlide_Label, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_WaterSlide_Label, 0 );
+lv_obj_set_y( ui_WaterSlide_Label, -100 );
+lv_obj_set_align( ui_WaterSlide_Label, LV_ALIGN_CENTER );
+lv_label_set_text(ui_WaterSlide_Label,"Water Slide");
+lv_obj_add_flag( ui_WaterSlide_Label, LV_OBJ_FLAG_EVENT_BUBBLE );   /// Flags
+lv_obj_set_style_text_font(ui_WaterSlide_Label, &lv_font_montserrat_18, LV_PART_MAIN| LV_STATE_DEFAULT);
 
-lv_obj_add_event_cb(ui_StartStop, ui_event_StartStop, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image7, ui_event_Image7, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_logo, ui_event_logo, LV_EVENT_ALL, NULL);
 
@@ -169,18 +136,16 @@ void ui_WaterParkStart_screen_destroy(void)
 
 // NULL screen variables
 ui_WaterParkStart= NULL;
-ui_StartStop= NULL;
-ui_StartStopLabel= NULL;
-ui_SensorAFrame= NULL;
-ui_SensorAValue= NULL;
-ui_SensorBFrame= NULL;
-ui_SensorBValue= NULL;
-ui_Image7= NULL;
-ui_logo= NULL;
+ui_BContainer= NULL;
 ui_SensorBFrame3= NULL;
 ui_SensorCValue= NULL;
-ui_Label6= NULL;
 ui_Label1= NULL;
-ui_Label2= NULL;
+ui_Image7= NULL;
+ui_logo= NULL;
+ui_AContainer= NULL;
+ui_SensorBFrame4= NULL;
+ui_SensorCValue1= NULL;
+ui_ALabel= NULL;
+ui_WaterSlide_Label= NULL;
 
 }
