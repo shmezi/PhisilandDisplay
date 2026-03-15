@@ -2,6 +2,8 @@
 #include <TFT_eSPI.h>
 #include <WebServer.h>
 #include <Arduino.h>
+#include <esp_task_wdt.h>
+
 #include "display/Display.h"
 #include "dovetail/DovetailSystem.h"
 #include "game/Game.h"
@@ -37,7 +39,7 @@ void connectBT(lv_event_t *e) {
 
 void setup() {
     Serial.begin(115200);
-
+    esp_task_wdt_init(5, true);
     Store::initValuesFromSD();
 
     DovetailSystem::init();

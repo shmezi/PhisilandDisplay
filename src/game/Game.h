@@ -24,13 +24,12 @@ public:
 
     static void endRound();
 
-    static void setA(int value);
+    static void setA(const String &value);
 
-    static void setB(int value);
+    static void setB(const String &value);
 
-    static void setC(int value);
+    static void setC(const String &value);
 
-    Game();
 };
 
 

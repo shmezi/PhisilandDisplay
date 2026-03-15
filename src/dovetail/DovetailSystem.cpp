@@ -177,9 +177,9 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
             Serial.println(WiFi.macAddress());
             break;
         }
+
         case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED: {
             updateDeviceCount();
-
         }
         default:
             break;
@@ -347,13 +347,13 @@ void DovetailSystem::defineRoutes() {
             // Sanitize the slot input to ensure it's only a, b, or c
             if (slot == "a" || slot == "b" || slot == "c") {
                 if (slot == "a") {
-                    Game::setA(val.toInt());
+                    Game::setA(val);
                 }
                 if (slot == "b") {
-                    Game::setB(val.toInt());
+                    Game::setB(val);
                 }
                 if (slot == "c") {
-                    Game::setC(val.toInt());
+                    Game::setC(val);
                 }
 
                 request->send(200, "text/plain", "Saved " + val + " to slot " + slot);
@@ -397,6 +397,7 @@ void DovetailSystem::init() {
     WiFi.softAP(ssid, password);
     WiFi.setSleep(false);
     WiFi.onEvent(wifiEvent);
+    esp_wifi_set_inactive_time(WIFI_IF_AP, 10);
     sdQueue = xQueueCreate(10, sizeof(FileWritePacket));
 
     xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
