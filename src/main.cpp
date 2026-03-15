@@ -55,6 +55,7 @@ char receivedChars[64]; // Buffer to store the received data
 void loop() {
     Display::lvglTask();
     DovetailSystem::dnsServer.processNextRequest();
+    DovetailSystem::saveRegistryToSD();
     // DovetailSystem::server.handleClient();
     delay(5);
 }
