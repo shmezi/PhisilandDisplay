@@ -11,8 +11,6 @@ std::set<String> Store::allowedMacs;
 String Store::codebase[4];
 
 void Store::startSDCard() {
-    SD.end();
-
     SD.begin(5, SPI, 4000000, "/sd", 10);
 
 }

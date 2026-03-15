@@ -33,6 +33,9 @@ void setup() {
     DovetailSystem::init();
     Display::innit();
 
+
+
+
     Serial.println("Setup done");
 }
 
@@ -41,6 +44,7 @@ char receivedChars[64]; // Buffer to store the received data
 
 void loop() {
     Display::lvglTask();
+    DovetailSystem::dnsServer.processNextRequest();
     // DovetailSystem::server.handleClient();
     delay(5);
 }

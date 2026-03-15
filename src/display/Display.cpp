@@ -56,6 +56,7 @@ void Display::my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *
 
     lv_disp_flush_ready(disp);
 }
+
 void Display::my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data) {
     const auto p = touchscreen.getTouch();
     // Serial.print("X: ");
@@ -109,7 +110,7 @@ void Display::innit() {
 
     //Initialise LVGL
     lv_init();
-    draw_buf = new lv_color_t[DRAW_BUF_SIZE];
+    draw_buf = static_cast<lv_color_t *>(heap_caps_malloc(320 * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     lv_display_t *disp;
     tft.begin();
     tft.setRotation(2); // Set to 1 for Landscape

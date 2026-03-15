@@ -4,12 +4,15 @@
 
 #ifndef PHISILANDDISPLAY_GAME_H
 #define PHISILANDDISPLAY_GAME_H
+#include <iosfwd>
+#include <WString.h>
+
 #include "misc/lv_event_private.h"
 
 
 class Game {
 public:
-    static int screen;
+    static String screen;
 
     static void onResetButton(lv_event_t *e);
 

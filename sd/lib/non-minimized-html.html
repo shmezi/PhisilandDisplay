@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiStudio | v1.3 Final</title>
+
+    <link rel="stylesheet" href="lib/codemirror.min.css">
+    <link rel="stylesheet" href="lib/neo.min.css">
+    <link rel="stylesheet" href="lib/show-hint.min.css">
+    <script src="lib/codemirror.min.js"></script>
+    <script src="lib/show-hint.min.js"></script>
+
+    <style>
+        /* Ensure the cursor is thick and visible */
+        .CodeMirror-cursor {
+            border-left: 2px solid #2d3748 !important;
+            visibility: visible !important;
+        }
+
+        /* Color for true/false/yes/no (Atoms) */
+        .cm-s-neo span.cm-atom { color: #805ad5; font-weight: 600; }
+        /* Color updates for your specific language categories */
+        .cm-s-neo span.cm-keyword { color: #d53f8c; font-weight: bold; }   /* Flow: Pink */
+        .cm-s-neo span.cm-builtin { color: #3182ce; font-weight: bold; }   /* Hardware: Blue */
+        .cm-s-neo span.cm-variable-2 { color: #dd6b20; }                   /* Sensors: Orange */
+        .cm-s-neo span.cm-atom { color: #805ad5; }                         /* System: Purple */
+        .cm-s-neo span.cm-number { color: #38a169; }                       /* Numbers: Green */
+        .CodeMirror-cursor {
+            border-left: 2px solid #2d3748 !important;
+        }
+        :root {
+            --bg: #ffffff; --sidebar: #f7f9fc; --toolbar: #ffffff;
+            --accent-blue: #3182ce; --accent-green: #e8f5e9;
+            --text-main: #2c3e50; --text-muted: #7f8c8d;
+            --border: #edf2f7; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        body { margin: 0; display: flex; height: 100vh; background: var(--bg); color: var(--text-main); font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+
+        /* Sidebar */
+        #sidebar { width: 240px; min-width: 240px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh; }
+        .sidebar-header { padding: 20px; font-size: 11px; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        #file-list { flex-grow: 1; padding: 10px; overflow-y: auto; }
+
+        .file-item { padding: 8px 12px; cursor: pointer; border-radius: 8px; font-size: 13px; display: flex; align-items: center; color: #4a5568; margin-bottom: 4px; position: relative; }
+        .file-item:hover { background: #edf2f7; }
+        .file-item.active { background: #ffffff; box-shadow: var(--shadow); color: var(--accent-blue); font-weight: 600; }
+
+        .file-actions { display: none; position: absolute; right: 8px; gap: 6px; background: inherit; padding-left: 10px; align-items: center; }
+        .file-item:hover .file-actions { display: flex; }
+        .icon-btn { cursor: pointer; opacity: 0.6; display: flex; align-items: center; padding: 4px; border-radius: 4px; }
+        .icon-btn:hover { opacity: 1; background: #fff; color: var(--accent-blue); }
+
+        /* Main Area */
+        #main { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; min-width: 0; }
+        .toolbar { height: 50px; background: var(--toolbar); padding: 0 20px; display: flex; gap: 12px; border-bottom: 1px solid var(--border); align-items: center; flex-shrink: 0; }
+        .logo { font-weight: 800; color: var(--accent-blue); font-size: 18px; margin-right: 20px; }
+
+        .CodeMirror { flex-grow: 1; height: calc(100vh - 50px) !important; font-size: 15px; }
+
+        /* Syntax Colors */
+        .cm-s-neo span.cm-keyword { color: #d53f8c; font-weight: bold; }
+        .cm-s-neo span.cm-builtin { color: #3182ce; font-weight: 600; }
+        .cm-s-neo span.cm-string { color: #38a169; }
+        .cm-s-neo span.cm-comment { color: #a0aec0; font-style: italic; }
+
+        .status-tag { font-size: 10px; padding: 3px 10px; border-radius: 12px; background: #f1f3f5; color: #6a737d; margin-left: auto; text-transform: uppercase; font-weight: 700; }
+        .status-saving { background: #fff9db; color: #f59f00; }
+        .status-saved { background: #e6fffa; color: #38a169; }
+
+        .btn { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); color: #4a5568; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        EXPLORER
+        <div class="icon-btn" onclick="newFile()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </div>
+    </div>
+    <div id="file-list"></div>
+</div>
+
+<div id="main">
+    <div class="toolbar">
+        <div class="logo">Dovetail</div>
+
+        <button class="btn" onclick="saveFile()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save
+        </button>
+
+        <button class="btn" onclick="runCode()" style="background: var(--accent-green); color: #2e7d32; border-color: #c8e6c9;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+            Run
+        </button>
+
+        <div id="save-status" class="status-tag">Ready</div>
+    </div>
+    <textarea id="editor">// Editor Loading...</textarea>
+</div>
+
+<script>
+    // --- 1. Syntax Mode Definition ---
+    // Updated Categories
+    const CONTROL_FLOW = ["if", "and", "or", "not", "while", "fn", "return", "when", "once"];
+    const HARDWARE = ["move", "motor", "rotate", "reset", "clear", "write", "read", "analog", "on"];
+    const SENSORS = ["gyro", "angle", "rotations", "degrees", "encoder", "status", "now"];
+    const SYSTEM = ["print", "sendResult", "endActivity", "after", "true", "false", "yes", "no"];
+
+    // Update ALL_SUGGESTIONS so they appear in autocomplete
+    const ALL_SUGGESTIONS = [...CONTROL_FLOW, ...HARDWARE, ...SENSORS, ...SYSTEM].sort();
+    // Update defineMode
+    CodeMirror.defineMode("phiSyntax", function() {
+        return {
+            token: function(stream) {
+                if (stream.eatSpace()) return null;
+                if (stream.match("//")) { stream.skipToEnd(); return "comment"; }
+                if (stream.match(/^"([^"\\]|\\.)*"/)) return "string";
+
+                // Logic/Flow (Pink/Bold)
+                if (stream.match(new RegExp(`(?:${CONTROL_FLOW.join('|')})\\b`))) return "keyword";
+
+                // Hardware/Actions (Blue/Strong)
+                if (stream.match(new RegExp(`(?:${HARDWARE.join('|')})\\b`))) return "builtin";
+
+                // Sensors (Orange/Gold)
+                if (stream.match(new RegExp(`(?:${SENSORS.join('|')})\\b`))) return "variable-2";
+
+                // System (Purple/Muted)
+                if (stream.match(new RegExp(`(?:${SYSTEM.join('|')})\\b`))) return "atom";
+
+                if (stream.match(/[\d\.]+/)) return "number";
+                stream.next();
+                return null;
+            }
+        };
+    });
+
+    // --- 2. Initialize Editor ---
+    var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+        lineNumbers: true,
+        theme: "neo",
+        mode: "phiSyntax",
+        indentUnit: 4,
+        extraKeys: {
+            "Ctrl-S": (cm) => { saveFile(); },
+            "Cmd-S": (cm) => { saveFile(); },
+            "Ctrl-Space": "autocomplete",
+
+            // Intelligent Wrapping Logic
+            "'('": (cm) => wrapSelection(cm, '(', ')'),
+            "'['": (cm) => wrapSelection(cm, '[', ']'),
+            "'{'": (cm) => wrapSelection(cm, '{', '}'),
+            "'\"'": (cm) => wrapSelection(cm, '"', '"'),
+            "'\''": (cm) => wrapSelection(cm, "'", "'")
+        }
+    });
+    function wrapSelection(cm, open, close) {
+        if (cm.somethingSelected()) {
+            const selections = cm.listSelections();
+            cm.operation(() => {
+                selections.forEach(sel => {
+                    const text = cm.getRange(sel.anchor, sel.head);
+                    cm.replaceRange(open + text + close, sel.from(), sel.to());
+                });
+            });
+        } else {
+            // No selection? Just auto-pair and move cursor inside
+            cm.replaceSelection(open + close);
+            const cur = cm.getCursor();
+            cm.setCursor(cur.line, cur.ch - close.length);
+        }
+    }
+    // Autocomplete Trigger
+    editor.on("inputRead", function(cm, change) {
+        if (change.text[0] === " " || change.text[0] === "") return;
+        cm.showHint({
+            hint: (cm) => {
+                const cursor = cm.getCursor();
+                const line = cm.getLine(cursor.line);
+                let start = cursor.ch;
+                while (start > 0 && /\w/.test(line.charAt(start - 1))) start--;
+                const currentWord = line.slice(start, cursor.ch);
+                const list = ALL_SUGGESTIONS.filter(w => w.startsWith(currentWord));
+                return { list, from: CodeMirror.Pos(cursor.line, start), to: cursor };
+            },
+            completeSingle: false
+        });
+    });
+
+    // --- 3. Logic ---
+    let activeFile = "";
+    let autoSaveTimeout = null;
+
+    function updateStatus(text, type = '') {
+        const el = document.getElementById('save-status');
+        el.innerText = text;
+        el.className = 'status-tag ' + type;
+    }
+
+    editor.on("change", () => {
+        if (!activeFile) return;
+        updateStatus("Modified", "status-saving");
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(() => { saveFile(true); }, 3000);
+    });
+    async function saveFile(silent = false) {
+        if (!activeFile) return;
+        if (!silent) updateStatus("Saving...", "status-saving");
+        try {
+            // 1. Create a Blob to ensure the data is treated as raw bytes
+            const codeContent = editor.getValue();
+            const blob = new Blob([codeContent], { type: 'text/plain' });
+
+            const res = await fetch(`/save?name=${encodeURIComponent(activeFile)}`, {
+                method: 'POST',
+                // 2. Explicitly set Content-Type to avoid auto-parsing of '='
+                headers: {
+                    'Content-Type': 'application/octet-stream'
+                },
+                body: blob
+            });
+
+            if (res.ok) {
+                updateStatus("Saved", "status-saved");
+                setTimeout(() => {
+                    if(document.getElementById('save-status').innerText === "Saved")
+                        updateStatus("Ready");
+                }, 2000);
+            } else {
+                updateStatus("Save Failed", "status-error");
+            }
+        } catch (e) {
+            updateStatus("Offline", "");
+        }
+    }
+
+    async function openFile(name) {
+        if (activeFile && activeFile !== name) await saveFile(true);
+        activeFile = name;
+        try {
+            const res = await fetch(`/read?name=${encodeURIComponent(name)}`);
+            const content = await res.text();
+            editor.setValue(content);
+            updateStatus("Editing: " + name);
+            loadFileList();
+            setTimeout(() => editor.refresh(), 10);
+        } catch (e) { console.error(e); }
+    }
+
+    async function loadFileList() {
+        try {
+            const res = await fetch('/list');
+            const files = await res.json();
+            const container = document.getElementById('file-list');
+
+            container.innerHTML = files.map(f => `
+            <div class="file-item ${f === activeFile ? 'active' : ''}" onclick="openFile('${f}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.6; margin-right:10px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span style="flex-grow:1">${f}</span>
+                <div class="file-actions">
+                    <div class="icon-btn" onclick="renameFile(event, '${f}')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </div>
+                    <div class="icon-btn" onclick="deleteFile(event, '${f}')" style="color:#e53e3e">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+            return files; // Return the list of files for the onload function
+        } catch (e) { console.error(e); return []; }
+    }
+
+    async function newFile() {
+        const name = prompt("Filename:");
+        if (name) {
+            activeFile = name.endsWith('.phi') ? name : name + '.phi';
+            editor.setValue("// " + activeFile);
+            await saveFile();
+            loadFileList();
+        }
+    }
+
+    async function renameFile(e, oldN) {
+        e.stopPropagation();
+        const newN = prompt("New name:", oldN);
+        if (newN && newN !== oldN) {
+            await fetch(`/rename?old=${encodeURIComponent(oldN)}&new=${encodeURIComponent(newN)}`);
+            if (activeFile === oldN) activeFile = newN;
+            loadFileList();
+        }
+    }
+
+    async function deleteFile(e, n) {
+        e.stopPropagation();
+        if (confirm("Delete " + n + "?")) {
+            await fetch(`/delete?name=${encodeURIComponent(n)}`);
+            if (activeFile === n) { activeFile = ""; editor.setValue(""); }
+            loadFileList();
+        }
+    }
+
+    function runCode() {
+        if (!activeFile) return alert("Select a file");
+        fetch(`/run?name=${encodeURIComponent(activeFile)}`);
+    }
+
+    window.onload = async () => {
+        const files = await loadFileList();
+        if (files.length > 0) {
+            openFile(files[0]); // Automatically open the first file in the list
+        }
+        setTimeout(() => editor.refresh(), 100);
+    };
+</script>
+</body>
+</html>

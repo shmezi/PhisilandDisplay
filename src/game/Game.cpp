@@ -16,45 +16,44 @@
 #include "widgets/arc/lv_arc.h"
 #include "widgets/label/lv_label.h"
 
-int Game::screen = 1;
+String Game::screen = "water";
 
 void Game::onResetButton(lv_event_t *e) {
-    DovetailSystem::sendMessage();
+    DovetailSystem::sendMessage("reset");
 }
-void Game::onStartButton(lv_event_t *e) {
 
+void Game::onStartButton(lv_event_t *e) {
     if (!(lv_obj_has_state(ui_StartStop, LV_STATE_CHECKED) || lv_obj_has_state(ui_StartStop1, LV_STATE_CHECKED) ||
           lv_obj_has_state(ui_StartStop2, LV_STATE_CHECKED))) {
         Serial.print("~-1");
+
+        DovetailSystem::sendMessage("event?val=-1");
         return;
     }
+    if (screen == "water")
+        DovetailSystem::sendMessage("event?val=-2");
+    if (screen == "swings")
+        DovetailSystem::sendMessage("event?val=" + String(lv_arc_get_value(ui_SpeedControl1)));
+    if (screen == "blackmamba")
+        DovetailSystem::sendMessage("event?val=" + String(lv_arc_get_value(ui_SpeedControl2)));
 
-    switch (screen) {
-        case 1:
-            Serial.print("~-2");
-            break;
-        case 2:
-            Serial.print(String("~") + String(lv_arc_get_value(ui_SpeedControl1)));
-            break;
-        case 3:
-            Serial.print(String("~") + String(lv_arc_get_value(ui_SpeedControl2)));
-            break;
-    }
+
 }
 
 void Game::setCurrentScreen() {
-    if (screen == 1) {
+    if (screen == "water") {
         lv_disp_load_scr(ui_WaterParkStart);
     }
-    if (screen == 2) {
+    if (screen == "swings") {
         lv_disp_load_scr(ui_SwingStart);
     }
-    if (screen == 3) {
+    if (screen == "blackmamba") {
         lv_disp_load_scr(ui_BlackMambaStart);
     }
 }
 
 void Game::onBackButton(lv_event_t *e) {
+
     setCurrentScreen();
 }
 

@@ -4,12 +4,14 @@
 
 #include "DovetailSystem.h"
 #include <HTTPClient.h>
-
+#include <DNSServer.h>
 #include <esp_wifi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
+#include <map>
 #include <SD.h>
 
+#include "game/Game.h"
 #include "store/Store.h"
 const char *verbs[] = {
     "Carve",
@@ -46,13 +48,15 @@ const char *nouns[] = {
     "Fern",
     "Moss"
 };
+String DovetailSystem::lastRunFile;
+String DovetailSystem::ssid = "Dovetail-ERROR-SD-NOT-INSERTED!";
 
-int rand1 = random(0, 30);
-int rand2 = random(0, 30);
-String ssid = "Dovetail-Testing";
-
-// String ssid = "Dovetail-" + String(verbs[rand1]) + "-" + String(nouns[rand2]);
 const char *password = "Phisiland";
+
+
+// A map to store: Domain Name -> Client IP
+std::map<String, IPAddress> customDomains;
+DNSServer DovetailSystem::dnsServer;
 
 
 int selectedCodeBase = 0;
@@ -70,10 +74,10 @@ void DovetailSystem::kickUser(uint8_t aid) {
     }
 }
 
-void DovetailSystem::sendMessage() {
+void DovetailSystem::sendMessage(const String &message) {
     HTTPClient http;
 
-    String serverPath = "http://192.168.4.2/reset";
+    String serverPath = "http://" + customDomains["core.it"].toString() + "/" + message;
 
     // Your Domain name with URL path or IP address with path
     http.begin(serverPath.c_str());
@@ -95,6 +99,37 @@ void DovetailSystem::sendMessage() {
     }
     // Free resources
     http.end();
+}
+
+void DovetailSystem::initWifiName() {
+    if (SD.exists("/wifi-name.txt")) {
+        File f = SD.open("/wifi-name.txt", FILE_READ);
+        if (f) {
+            ssid = f.readString();
+            f.close();
+        }
+        return;
+    }
+    File f = SD.open("/wifi-name.txt", FILE_WRITE);
+    const int rand1 = random(0, 30);
+    const int rand2 = random(0, 30);
+
+    const String newWifiName = "Dovetail-" + String(verbs[rand1]) + "-" + String(nouns[rand2]);
+    if (f) {
+        f.print(newWifiName);
+        f.close();
+        Serial.println("Stored wifiname: " + newWifiName);
+        ssid = newWifiName;
+    }
+}
+
+void DovetailSystem::saveLastRun(const String &filename) {
+    File f = SD.open("/last_run.txt", FILE_WRITE);
+    if (f) {
+        f.print(filename);
+        f.close();
+        Serial.println("Stored last run: " + filename);
+    }
 }
 
 void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
@@ -135,40 +170,86 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     }
 }
 
+String getLastRun() {
+    if (SD.exists("/last_run.txt")) {
+        File f = SD.open("/last_run.txt", FILE_READ);
+        if (f) {
+            String lastFile = f.readString();
+            f.close();
 
-void DovetailSystem::init() {
+            // debug::log("Resuming last script: " + lastFile);
 
-    WiFi.softAP(ssid, password);
-    WiFi.onEvent(wifiEvent);
+            // Re-use your existing read logic to get the code and run it
+            String path = "/scripts/" + lastFile;
+            if (SD.exists(path)) {
+                return path;
+            }
+        }
+    }
+
+    return "Not found!";
+}
+
+struct FileWritePacket {
+    char path[64];
+    uint8_t *data;
+    size_t len;
+    bool isFirst;
+};
+
+QueueHandle_t sdQueue;
+// Background Task for SD Writing
+void sdWorkerTask(void *pvParameters) {
+    FileWritePacket packet{};
+    for (;;) {
+        // Wait indefinitely for a packet from the queue
+        if (xQueueReceive(sdQueue, &packet, portMAX_DELAY)) {
+            File f = SD.open(packet.path, packet.isFirst ? FILE_WRITE : FILE_APPEND);
+            if (f) {
+                f.write(packet.data, packet.len);
+                f.close();
+            }
+            // CRITICAL: Free the memory we allocated in the callback
+            free(packet.data);
+        }
+    }
+}
+
+void DovetailSystem::defineRoutes() {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SD, "/index.html", "text/html");
     });
     server.serveStatic("/lib", SD, "/lib/");
-    // Create the directory if it doesn't exist
-    if (!SD.exists("/scripts")) {
-        SD.mkdir("/scripts");
-    }
 
-    // UPDATED SAVE ROUTE
-    // Expects a URL like: /save?name=myfile.phi
     server.on("/save", HTTP_POST, [](AsyncWebServerRequest *request) {
-              }, nullptr,
-              [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+                  // Header response handled automatically or on completion
+              }, nullptr, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
                   String fileName = "untitled.ezra";
-                  if (request->hasParam("name")) {
-                      fileName = request->getParam("name")->value();
+                  if (request->hasParam("name", false)) {
+                      fileName = request->getParam("name", false)->value();
                   }
 
-                  // Ensure we save into the scripts folder
-                  String path = "/scripts/" + fileName;
+                  FileWritePacket packet{};
+                  snprintf(packet.path, sizeof(packet.path), "/scripts/%s", fileName.c_str());
+                  packet.len = len;
+                  packet.isFirst = (index == 0);
 
-                  File f = SD.open(path, FILE_WRITE);
-                  if (f) {
-                      f.write(data, len);
-                      f.close();
-                      request->send(200, "text/plain", "Saved: " + path);
-                  } else {
-                      request->send(500, "text/plain", "SD Write Failed");
+                  // 3. Allocate a copy of the data.
+                  // The 'data' pointer from AsyncWebServer is temporary and will be gone
+                  // when this callback returns. We must make a persistent copy.
+                  packet.data = (uint8_t *) malloc(len);
+                  if (packet.data) {
+                      memcpy(packet.data, data, len);
+
+                      // 4. Push to queue. If queue is full, wait up to 100ms.
+                      if (xQueueSend(sdQueue, &packet, pdMS_TO_TICKS(100)) != pdPASS) {
+                          free(packet.data); // Clean up if queue failed
+                          Serial.println("SD Queue Full!");
+                      }
+                  }
+
+                  if (index + len == total) {
+                      request->send(200, "text/plain", "File queued for saving");
                   }
               });
     // Ensure this matches your JS call
@@ -185,22 +266,22 @@ void DovetailSystem::init() {
         }
     });
     // 1. DELETE FILE
-    server.on("/delete", HTTP_GET, [](AsyncWebServerRequest *request){
-      if(request->hasParam("name")) {
-        String path = "/scripts/" + request->getParam("name")->value();
-        if(SD.remove(path)) request->send(200, "text/plain", "Deleted");
-        else request->send(500, "text/plain", "Delete Failed");
-      }
+    server.on("/delete", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("name")) {
+            String path = "/scripts/" + request->getParam("name")->value();
+            if (SD.remove(path)) request->send(200, "text/plain", "Deleted");
+            else request->send(500, "text/plain", "Delete Failed");
+        }
     });
 
     // 2. RENAME FILE
-    server.on("/rename", HTTP_GET, [](AsyncWebServerRequest *request){
-      if(request->hasParam("old") && request->hasParam("new")) {
-        String oldPath = "/scripts/" + request->getParam("old")->value();
-        String newPath = "/scripts/" + request->getParam("new")->value();
-        if(SD.rename(oldPath, newPath)) request->send(200, "text/plain", "Renamed");
-        else request->send(500, "text/plain", "Rename Failed");
-      }
+    server.on("/rename", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("old") && request->hasParam("new")) {
+            String oldPath = "/scripts/" + request->getParam("old")->value();
+            String newPath = "/scripts/" + request->getParam("new")->value();
+            if (SD.rename(oldPath, newPath)) request->send(200, "text/plain", "Renamed");
+            else request->send(500, "text/plain", "Rename Failed");
+        }
     });
 
     // UPDATED LIST ROUTE (Only shows files in /scripts)
@@ -221,8 +302,8 @@ void DovetailSystem::init() {
     });
     // 4. SEND PREDEFINED FILE
     server.on("/code", HTTP_GET, [](AsyncWebServerRequest *request) {
-        String path = "/scripts/waterslide.code"; // Your predefined file path
-
+        // String path = getLastRun(); // Your predefined file path
+        String path = lastRunFile;
         if (SD.exists(path)) {
             // Send the file. "text/plain" is usually best for code/scripts
             request->send(SD, path, "text/plain");
@@ -231,12 +312,88 @@ void DovetailSystem::init() {
             request->send(404, "text/plain", "Predefined file not found on SD");
         }
     });
-    server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
-     sendMessage();
-   });
-    server.begin();
+    server.on("/run", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("name")) {
+            String filename = request->getParam("name")->value();
+
+            // 1. Save this name for next time
+            saveLastRun(filename);
+
+            sendMessage("reset");
+            request->send(200, "text/plain", "Running and Saved: " + filename);
+        }
+    });
+    server.on("/sendResult", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("val") && request->hasParam("slot")) {
+            String val = request->getParam("val")->value();
+            String slot = request->getParam("slot")->value();
+            Serial.println("Result recieved: " + val + " " + slot);
+            // Sanitize the slot input to ensure it's only a, b, or c
+            if (slot == "a" || slot == "b" || slot == "c") {
+                if (slot == "a") {
+                    Game::setA(val.toInt());
+                }
+                if (slot == "b") {
+                    Game::setB(val.toInt());
+                }
+                if (slot == "c") {
+                    Game::setC(val.toInt());
+                }
+
+                request->send(200, "text/plain", "Saved " + val + " to slot " + slot);
+            } else {
+                request->send(400, "text/plain", "Invalid slot. Use a, b, or c.");
+            }
+        } else {
+            request->send(400, "text/plain", "Missing parameters. Need val and slot.");
+        }
+    });
+    server.on("/screen", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("id")) {
+            String screenId = request->getParam("id")->value();
+
+            Serial.println("Changing screen to: " + screenId);
+            Game::screen = screenId;
+            Game::setCurrentScreen();
+        } else {
+            request->send(400, "text/plain", "Missing parameters. Need val and slot.");
+        }
+    });
+    server.on("/register", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("domain")) {
+            String domain = request->getParam("domain")->value();
+            IPAddress clientIP = request->client()->remoteIP();
+
+            customDomains[domain] = clientIP;
+
+            // We tell the DNS server to start resolving this specific domain
+            dnsServer.start(53, domain, clientIP);
+            Serial.println("Registered ip of:" + clientIP.toString() + " as " + domain);
+            request->send(200, "text/plain", "Registered " + domain + " to " + clientIP.toString());
+        } else {
+            request->send(400, "text/plain", "Missing domain param");
+        }
+    });
 }
 
+void DovetailSystem::init() {
+    initWifiName();
+    WiFi.softAP(ssid, password);
+    WiFi.setSleep(false);
+    WiFi.onEvent(wifiEvent);
+    sdQueue = xQueueCreate(10, sizeof(FileWritePacket));
+
+    xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
+
+    if (!SD.exists("/scripts")) {
+        SD.mkdir("/scripts");
+    }
+    defineRoutes();
+    dnsServer.start(53, "am.it", WiFi.softAPIP());
+
+    lastRunFile = getLastRun();
+    server.begin();
+}
 
 void DovetailSystem::connection() {
     connectMode = !connectMode;
