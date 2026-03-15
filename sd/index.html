@@ -5656,6 +5656,24 @@
         };
     });
 
+    async function renameFile(e, oldN) {
+        e.stopPropagation();
+        const newN = prompt("New name:", oldN);
+        if (newN && newN !== oldN) {
+            await fetch(`/rename?old=${encodeURIComponent(oldN)}&new=${encodeURIComponent(newN)}`);
+            if (activeFile === oldN) activeFile = newN;
+            loadFileList();
+        }
+    }
+
+    async function deleteFile(e, n) {
+        e.stopPropagation();
+        if (confirm("Delete " + n + "?")) {
+            await fetch(`/delete?name=${encodeURIComponent(n)}`);
+            if (activeFile === n) { activeFile = ""; editor.setValue(""); }
+            loadFileList();
+        }
+    }
     // --- 2. Initialize Editor ---
     var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
         lineNumbers: true, theme: "neo", mode: "phiSyntax", indentUnit: 4,

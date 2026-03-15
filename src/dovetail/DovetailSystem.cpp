@@ -309,8 +309,7 @@ void sdWorkerTask(void *pvParameters) {
     }
 }
 
-#include <ArduinoJson.h>
-#include <SD.h>
+
 
 
 void DovetailSystem::defineRoutes() {

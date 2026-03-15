@@ -44,6 +44,8 @@ void setup() {
 
     DovetailSystem::init();
     Display::innit();
+    const auto ssid = "SSID: " + DovetailSystem::ssid;
+    lv_label_set_text(ui_SSID, ssid.c_str());
 
 
     Serial.println("Setup done");

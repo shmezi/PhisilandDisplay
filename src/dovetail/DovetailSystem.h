@@ -11,7 +11,7 @@
 
 
 class DovetailSystem {
-    static String ssid;
+
 
 
     static void loadRegistryFromSD();
@@ -22,6 +22,7 @@ class DovetailSystem {
     static void wifiEvent(WiFiEvent_t event, arduino_event_info_t info);
 
 public:
+    static String ssid;
     static DNSServer dnsServer;
     static AsyncWebServer server;
 

@@ -5,7 +5,7 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_FileSelection = NULL;lv_obj_t *ui_logo3 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_FileSelector = NULL;lv_obj_t *ui_ButtonZone = NULL;lv_obj_t *ui_Run = NULL;lv_obj_t *ui_StartStopLabel3 = NULL;lv_obj_t *ui_StartStop5 = NULL;lv_obj_t *ui_StartStopLabel5 = NULL;lv_obj_t *ui_ConnectedLabel = NULL;
+lv_obj_t *ui_FileSelection = NULL;lv_obj_t *ui_logo3 = NULL;lv_obj_t *ui_BoardSelector = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_FileSelector = NULL;lv_obj_t *ui_ButtonZone = NULL;lv_obj_t *ui_Run = NULL;lv_obj_t *ui_StartStopLabel3 = NULL;lv_obj_t *ui_StartStop5 = NULL;lv_obj_t *ui_StartStopLabel5 = NULL;lv_obj_t *ui_ConnectedLabel = NULL;lv_obj_t *ui_SSID = NULL;
 // event funtions
 void ui_event_logo3( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -47,6 +47,15 @@ lv_obj_set_align( ui_logo3, LV_ALIGN_BOTTOM_LEFT );
 lv_obj_add_flag( ui_logo3, LV_OBJ_FLAG_CLICKABLE );   /// Flags
 lv_obj_remove_flag( ui_logo3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
+ui_BoardSelector = lv_dropdown_create(ui_FileSelection);
+lv_dropdown_set_options( ui_BoardSelector, "No boards found!" );
+lv_obj_set_width( ui_BoardSelector, 214);
+lv_obj_set_height( ui_BoardSelector, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_BoardSelector, -41 );
+lv_obj_set_y( ui_BoardSelector, -63 );
+lv_obj_set_align( ui_BoardSelector, LV_ALIGN_CENTER );
+lv_obj_add_flag( ui_BoardSelector, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
+
 ui_Label3 = lv_label_create(ui_FileSelection);
 lv_obj_set_width( ui_Label3, 310);
 lv_obj_set_height( ui_Label3, LV_SIZE_CONTENT);   /// 1
@@ -57,11 +66,11 @@ lv_obj_set_style_text_align(ui_Label3, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_ST
 lv_obj_set_style_text_font(ui_Label3, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_FileSelector = lv_roller_create(ui_FileSelection);
-lv_roller_set_options( ui_FileSelector, "Water Slide\nBlack Mamba\nSwings\nFerris Wheel", LV_ROLLER_MODE_NORMAL );
-lv_obj_set_height( ui_FileSelector, 146);
-lv_obj_set_width( ui_FileSelector, lv_pct(67));
+lv_roller_set_options( ui_FileSelector, "No Files Found!", LV_ROLLER_MODE_NORMAL );
+lv_obj_set_width( ui_FileSelector, 214);
+lv_obj_set_height( ui_FileSelector, 98);
 lv_obj_set_x( ui_FileSelector, -42 );
-lv_obj_set_y( ui_FileSelector, 0 );
+lv_obj_set_y( ui_FileSelector, 8 );
 lv_obj_set_align( ui_FileSelector, LV_ALIGN_CENTER );
 
 ui_ButtonZone = lv_obj_create(ui_FileSelection);
@@ -124,6 +133,16 @@ lv_label_set_text(ui_ConnectedLabel,"Connected clients: 0");
 lv_obj_set_style_text_align(ui_ConnectedLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_ConnectedLabel, &lv_font_montserrat_12, LV_PART_MAIN| LV_STATE_DEFAULT);
 
+ui_SSID = lv_label_create(ui_FileSelection);
+lv_obj_set_width( ui_SSID, 274);
+lv_obj_set_height( ui_SSID, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_SSID, -3 );
+lv_obj_set_y( ui_SSID, 0 );
+lv_obj_set_align( ui_SSID, LV_ALIGN_TOP_MID );
+lv_label_set_text(ui_SSID,"SSID:");
+lv_obj_set_style_text_align(ui_SSID, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_SSID, &lv_font_montserrat_12, LV_PART_MAIN| LV_STATE_DEFAULT);
+
 lv_obj_add_event_cb(ui_logo3, ui_event_logo3, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Run, ui_event_Run, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_StartStop5, ui_event_StartStop5, LV_EVENT_ALL, NULL);
@@ -137,6 +156,7 @@ void ui_FileSelection_screen_destroy(void)
 // NULL screen variables
 ui_FileSelection= NULL;
 ui_logo3= NULL;
+ui_BoardSelector= NULL;
 ui_Label3= NULL;
 ui_FileSelector= NULL;
 ui_ButtonZone= NULL;
@@ -145,5 +165,6 @@ ui_StartStopLabel3= NULL;
 ui_StartStop5= NULL;
 ui_StartStopLabel5= NULL;
 ui_ConnectedLabel= NULL;
+ui_SSID= NULL;
 
 }

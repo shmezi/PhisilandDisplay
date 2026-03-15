@@ -36,6 +36,7 @@ ui_FileSelection_screen_init();
 ui_FerisWheel_screen_init();
 ui_BlackMamba_screen_init();
 ui_SudoMode_screen_init();
+ui_SplashScreen_screen_init();
 ui____initial_actions0 = lv_obj_create(NULL);
 lv_disp_load_scr( ui_WaterParkStart);
 }
@@ -48,4 +49,5 @@ ui_FileSelection_screen_destroy();
 ui_FerisWheel_screen_destroy();
 ui_BlackMamba_screen_destroy();
 ui_SudoMode_screen_destroy();
+ui_SplashScreen_screen_destroy();
 }

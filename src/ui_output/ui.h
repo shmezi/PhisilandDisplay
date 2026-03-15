@@ -33,6 +33,7 @@ extern "C" {
 #include "ui_FerisWheel.h"
 #include "ui_BlackMamba.h"
 #include "ui_SudoMode.h"
+#include "ui_SplashScreen.h"
 
 ///////////////////// VARIABLES ////////////////////
 
