@@ -61,6 +61,10 @@ void loop() {
     DovetailSystem::saveRegistryToSD();
     Game::setCurrentScreen();
     Game::updateValues();
+    if (Game::shouldEndActivity) {
+        Game::endRound();
+        Game::shouldEndActivity = false;
+    }
     // DovetailSystem::server.handleClient();
     delay(5);
 }

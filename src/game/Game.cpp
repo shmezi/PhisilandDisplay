@@ -20,13 +20,14 @@
 #include "widgets/label/lv_label.h"
 
 String Game::screen = "water";
-
+bool Game::shouldEndActivity = false;
 void Game::onResetButton(lv_event_t *e) {
     DovetailSystem::sendMessageToClient("core", "reset");
 }
 
 //START / STOP BUTTON!
 void Game::onStartButton(lv_event_t *e) {
+    shouldSwitchScreen = true;
     if (screen == "blackmamba") {
         DovetailSystem::sendMessageToClient("core", "event?val=1");
         return;
@@ -61,6 +62,7 @@ void Game::updateValues() {
     setC(cValue);
 }
 
+
 void Game::setCurrentScreen() {
     if (!shouldSwitchScreen) return;
     shouldSwitchScreen = false;
@@ -88,7 +90,6 @@ void Game::endRound() {
     lv_obj_clear_state(ui_StartStop2, LV_STATE_CHECKED);
     lv_obj_clear_state(ui_StartStop4, LV_STATE_CHECKED); //Ferris wheel
 
-    // lv_label_set_text(ui_StartStopLabel, "Start");
     lv_label_set_text(ui_StartStopLabel1, "Start");
     lv_label_set_text(ui_StartStopLabel2, "Start");
     lv_label_set_text(ui_StartStopLabel4, "Start");

@@ -483,7 +483,6 @@ void DovetailSystem::defineRoutes() {
         if (request->hasParam("val") && request->hasParam("slot")) {
             String val = request->getParam("val")->value();
             String slot = request->getParam("slot")->value();
-            Serial.println("Result recieved: " + val + " " + slot);
             // Sanitize the slot input to ensure it's only a, b, or c
             if (slot == "a" || slot == "b" || slot == "c") {
                 if (slot == "a") {
@@ -515,6 +514,12 @@ void DovetailSystem::defineRoutes() {
         } else {
             request->send(400, "text/plain", "Missing parameters. Need val and slot.");
         }
+    });
+    server.on("/endActivity", HTTP_GET, [](AsyncWebServerRequest *request) {
+        Serial.println("Ending activity");
+        Game::shouldEndActivity = true;
+        request->send(200, "text/plain", "Stopped the activity!");
+
     });
     server.on("/register", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!request->hasParam("mac")) {

@@ -14,6 +14,8 @@ class Game {
 public:
     static String screen;
 
+    static bool shouldEndActivity;
+
     static void onResetButton(lv_event_t *e);
 
     static void onStartButton(lv_event_t *e);
