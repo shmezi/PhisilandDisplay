@@ -21,6 +21,7 @@
 
 String Game::screen = "water";
 bool Game::shouldEndActivity = false;
+
 void Game::onResetButton(lv_event_t *e) {
     DovetailSystem::sendMessageToClient("core", "reset");
 }
@@ -82,6 +83,7 @@ void Game::setCurrentScreen() {
 
 
 void Game::onBackButton(lv_event_t *e) {
+    shouldSwitchScreen = true;
     setCurrentScreen();
 }
 

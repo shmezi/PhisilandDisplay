@@ -519,7 +519,6 @@ void DovetailSystem::defineRoutes() {
         Serial.println("Ending activity");
         Game::shouldEndActivity = true;
         request->send(200, "text/plain", "Stopped the activity!");
-
     });
     server.on("/register", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!request->hasParam("mac")) {

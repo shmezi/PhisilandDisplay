@@ -1,0 +1,16 @@
+{
+  "name": "Waterside",
+  "description": "A walk in the park!",
+  "devices": [
+    {
+      "id": "core",
+      "description": "The main Esp32",
+      "file": "waterslide.ezra"
+    },
+    {
+      "id": "sensorNodeA",
+      "description": "Sensor on the right",
+      "file": "sensorNode.ezra"
+    }
+  ]
+}

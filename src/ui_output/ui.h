@@ -34,6 +34,7 @@ extern "C" {
 #include "ui_BlackMamba.h"
 #include "ui_SudoMode.h"
 #include "ui_SplashScreen.h"
+#include "ui_HoistSystem.h"
 
 ///////////////////// VARIABLES ////////////////////
 
