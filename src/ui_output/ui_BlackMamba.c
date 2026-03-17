@@ -5,23 +5,12 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_BlackMamba = NULL;lv_obj_t *ui_SpeedControl2 = NULL;lv_obj_t *ui_Speed2 = NULL;lv_obj_t *ui_StartStop2 = NULL;lv_obj_t *ui_StartStopLabel2 = NULL;lv_obj_t *ui_SensorAFrame2 = NULL;lv_obj_t *ui_BlackMambaSensorAValue = NULL;lv_obj_t *ui_SensorBFrame5 = NULL;lv_obj_t *ui_BlackMambaSensorBValue = NULL;lv_obj_t *ui_Image2 = NULL;lv_obj_t *ui_logo2 = NULL;lv_obj_t *ui_BlackMambaSensorC = NULL;lv_obj_t *ui_BlackMambaSensorCValue = NULL;
+lv_obj_t *ui_BlackMamba = NULL;lv_obj_t *ui_StartStop2 = NULL;lv_obj_t *ui_StartStopLabel2 = NULL;lv_obj_t *ui_SensorAFrame2 = NULL;lv_obj_t *ui_BlackMambaSensorAValue = NULL;lv_obj_t *ui_SensorBFrame5 = NULL;lv_obj_t *ui_BlackMambaSensorBValue = NULL;lv_obj_t *ui_Image2 = NULL;lv_obj_t *ui_logo2 = NULL;lv_obj_t *ui_BlackMambaSensorC = NULL;lv_obj_t *ui_BlackMambaSensorCValue = NULL;
 // event funtions
-void ui_event_SpeedControl2( lv_event_t * e) {
-    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
-
-if ( event_code == LV_EVENT_VALUE_CHANGED) {
-      _ui_arc_set_text_value( ui_Speed2, target, "", "%");
-}
-}
-
 void ui_event_StartStop2( lv_event_t * e) {
-    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+    lv_event_code_t event_code = lv_event_get_code(e);
 
 if ( event_code == LV_EVENT_CLICKED) {
-      _ui_state_modify( ui_StartStop2, LV_STATE_CHECKED, _UI_MODIFY_STATE_TOGGLE);
-      _ui_checked_set_text_value( ui_StartStopLabel2, target, "Stop", "Start");
-      _ui_state_modify( ui_SpeedControl2, LV_STATE_DISABLED, _UI_MODIFY_STATE_TOGGLE);
       onStartButton( e );
 }
 }
@@ -49,31 +38,6 @@ void ui_BlackMamba_screen_init(void)
 ui_BlackMamba = lv_obj_create(NULL);
 lv_obj_remove_flag( ui_BlackMamba, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_SpeedControl2 = lv_arc_create(ui_BlackMamba);
-lv_obj_set_width( ui_SpeedControl2, 200);
-lv_obj_set_height( ui_SpeedControl2, 200);
-lv_obj_set_x( ui_SpeedControl2, 0 );
-lv_obj_set_y( ui_SpeedControl2, 24 );
-lv_obj_set_align( ui_SpeedControl2, LV_ALIGN_CENTER );
-lv_obj_add_state( ui_SpeedControl2, LV_STATE_CHECKED );     /// States
-lv_obj_add_flag( ui_SpeedControl2, LV_OBJ_FLAG_FLOATING );   /// Flags
-lv_arc_set_value(ui_SpeedControl2, 0);
-lv_obj_set_style_bg_color(ui_SpeedControl2, lv_color_hex(0xF3F3F3), LV_PART_MAIN | LV_STATE_DISABLED );
-lv_obj_set_style_bg_opa(ui_SpeedControl2, 255, LV_PART_MAIN| LV_STATE_DISABLED);
-lv_obj_set_style_arc_color(ui_SpeedControl2, lv_color_hex(0xE7E7E7), LV_PART_MAIN | LV_STATE_DISABLED );
-lv_obj_set_style_arc_opa(ui_SpeedControl2, 255, LV_PART_MAIN| LV_STATE_DISABLED);
-
-lv_obj_set_style_bg_color(ui_SpeedControl2, lv_color_hex(0x5D5B5B), LV_PART_KNOB | LV_STATE_DISABLED );
-lv_obj_set_style_bg_opa(ui_SpeedControl2, 255, LV_PART_KNOB| LV_STATE_DISABLED);
-
-ui_Speed2 = lv_label_create(ui_BlackMamba);
-lv_obj_set_width( ui_Speed2, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_Speed2, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_Speed2, 0 );
-lv_obj_set_y( ui_Speed2, 110 );
-lv_obj_set_align( ui_Speed2, LV_ALIGN_CENTER );
-lv_label_set_text(ui_Speed2,"0%");
-
 ui_StartStop2 = lv_button_create(ui_BlackMamba);
 lv_obj_set_width( ui_StartStop2, 150);
 lv_obj_set_height( ui_StartStop2, 150);
@@ -92,7 +56,7 @@ ui_StartStopLabel2 = lv_label_create(ui_StartStop2);
 lv_obj_set_width( ui_StartStopLabel2, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_StartStopLabel2, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_StartStopLabel2, LV_ALIGN_CENTER );
-lv_label_set_text(ui_StartStopLabel2,"Start");
+lv_label_set_text(ui_StartStopLabel2,"DROP");
 
 ui_SensorAFrame2 = lv_obj_create(ui_BlackMamba);
 lv_obj_set_width( ui_SensorAFrame2, 87);
@@ -160,7 +124,6 @@ lv_obj_set_height( ui_BlackMambaSensorCValue, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_BlackMambaSensorCValue, LV_ALIGN_CENTER );
 lv_label_set_text(ui_BlackMambaSensorCValue,"0ms");
 
-lv_obj_add_event_cb(ui_SpeedControl2, ui_event_SpeedControl2, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_StartStop2, ui_event_StartStop2, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image2, ui_event_Image2, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_logo2, ui_event_logo2, LV_EVENT_ALL, NULL);
@@ -173,8 +136,6 @@ void ui_BlackMamba_screen_destroy(void)
 
 // NULL screen variables
 ui_BlackMamba= NULL;
-ui_SpeedControl2= NULL;
-ui_Speed2= NULL;
 ui_StartStop2= NULL;
 ui_StartStopLabel2= NULL;
 ui_SensorAFrame2= NULL;

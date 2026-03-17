@@ -56,6 +56,8 @@ const char *password = "Phisiland";
 
 std::map<String, IPAddress> macToIp;
 std::map<String, String> macToName;
+std::map<String, String> nameToMac;
+
 std::map<String, String> macToCode;
 
 
@@ -136,6 +138,7 @@ void DovetailSystem::loadRegistryFromSD() {
         if (data.containsKey("name")) {
             String name = data["name"].as<String>();
             macToName[mac] = name;
+            nameToMac[name] = mac;
         }
     }
     Serial.printf("✅ Successfully loaded %d devices from SD.\n", (int) macToCode.size());
@@ -157,6 +160,7 @@ void DovetailSystem::kickUser(uint8_t aid) {
         Serial.printf("Error kicking user: %s\n", esp_err_to_name(err));
     }
 }
+
 // 1. Define a struct to pass multiple pieces of data to the task
 struct MessageData {
     String ip;
@@ -164,47 +168,49 @@ struct MessageData {
 };
 
 // 2. This is the background worker
-void sendMessageTask(void *pvParameters) {
-    // Take ownership of the parameters
-    auto *data = (MessageData *)pvParameters;
+QueueHandle_t msgQueue;
 
-    HTTPClient http;
-    String url = "http://" + data->ip + "/" + data->message;
+void messageWorker(void *pvParameters) {
+    while (true) {
+        MessageData *data;
+        // Wait forever until a message arrives in the queue
+        if (xQueueReceive(msgQueue, &data, portMAX_DELAY)) {
+            HTTPClient http;
+            String url = "http://" + data->ip + "/" + data->message;
+            http.setTimeout(1500); // Keep it snappy
 
-    // Set a short timeout so a dead client doesn't hang the task for 30s
-    http.setTimeout(2000);
+            if (http.begin(url)) {
+                int httpCode = http.GET();
+                Serial.printf("[HTTP] %s code: %d\n", data->ip.c_str(), httpCode);
+                http.end();
+            }
 
-    if (http.begin(url)) {
-        int httpCode = http.GET();
-        if (httpCode > 0) {
-            Serial.printf("[HTTP] %s response: %d\n", data->ip.c_str(), httpCode);
-        } else {
-            Serial.printf("[HTTP] %s failed: %s\n", data->ip.c_str(), http.errorToString(httpCode).c_str());
+            delete data; // Clean up the struct
+            vTaskDelay(pdMS_TO_TICKS(50)); // Tiny breather for the WiFi stack
         }
-        http.end();
     }
+}
 
-    // CLEANUP: Delete the struct and the task itself
-    delete data;
-    vTaskDelete(NULL);
+void DovetailSystem::sendMessageToClient(const String &clientId, const String &message) {
+    sendMessage(nameToMac[clientId], message);
 }
 
 // 3. The new non-blocking sendMessage
 void DovetailSystem::sendMessage(const String &mac, const String &message) {
     if (macToIp.count(mac) == 0) {
-        Serial.println("Error: MAC not found in IP map.");
+        Serial.println("Error: MAC: " + mac + " not found in IP map.");
         return;
     }
 
     // Create a new data object on the heap
-    auto *data = new MessageData();
-    data->ip = macToIp[mac].toString();
-    data->message = message;
 
     // Launch background task
     // Stack size 4096 is usually safe for HTTPClient
-    xTaskCreate(sendMessageTask, "SendMsg", 4096, (void*)data, 1, NULL);
-
+    MessageData *data = new MessageData{macToIp[mac].toString(), message};
+    if (xQueueSend(msgQueue, &data, 0) != pdPASS) {
+        Serial.println("Queue full! Dropping message to save memory.");
+        delete data;
+    }
     Serial.println("Message queued in background for " + mac);
 }
 
@@ -310,8 +316,6 @@ void sdWorkerTask(void *pvParameters) {
 }
 
 
-
-
 void DovetailSystem::defineRoutes() {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SD, "/index.html", "text/html");
@@ -387,6 +391,7 @@ void DovetailSystem::defineRoutes() {
             String mac = request->getParam("mac")->value();
             String name = request->getParam("name")->value();
             macToName[mac] = name;
+            nameToMac[name] = mac;
             needsSave = true;
             request->send(200, "text/plain", "Renamed");
         }
@@ -421,6 +426,7 @@ void DovetailSystem::defineRoutes() {
                 json += "\"" + String(file.name()) + "\"";
             }
             file = root.openNextFile();
+            yield();
         }
         json += "]";
         request->send(200, "application/json", json);
@@ -481,14 +487,15 @@ void DovetailSystem::defineRoutes() {
             // Sanitize the slot input to ensure it's only a, b, or c
             if (slot == "a" || slot == "b" || slot == "c") {
                 if (slot == "a") {
-                    Game::setA(val);
+                    Game::aValue = val;
                 }
                 if (slot == "b") {
-                    Game::setB(val);
+                    Game::bValue = val;
                 }
                 if (slot == "c") {
-                    Game::setC(val);
+                    Game::cValue = val;
                 }
+                Game::shouldUpdateValues = true;
 
                 request->send(200, "text/plain", "Saved " + val + " to slot " + slot);
             } else {
@@ -504,7 +511,7 @@ void DovetailSystem::defineRoutes() {
 
             Serial.println("Changing screen to: " + screenId);
             Game::screen = screenId;
-            Game::setCurrentScreen();
+            Game::shouldSwitchScreen = true;
         } else {
             request->send(400, "text/plain", "Missing parameters. Need val and slot.");
         }
@@ -521,6 +528,7 @@ void DovetailSystem::defineRoutes() {
         if (!macToCode.count(mac)) {
             macToCode[mac] = "waterslide.ezra";
             macToName[mac] = mac;
+            nameToMac[mac] = mac;
             needsSave = true;
         }
         request->send(200, "text/plain", "Registered IP!");
@@ -532,10 +540,15 @@ void DovetailSystem::init() {
     WiFi.softAP(ssid, password);
     WiFi.setSleep(false);
     WiFi.onEvent(wifiEvent);
-    esp_wifi_set_inactive_time(WIFI_IF_AP, 10);
-    sdQueue = xQueueCreate(10, sizeof(FileWritePacket));
+    // esp_wifi_set_inactive_time(WIFI_IF_AP, 10);
+    sdQueue = xQueueCreate(60, sizeof(FileWritePacket));
     loadRegistryFromSD();
     xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
+    msgQueue = xQueueCreate(10, sizeof(MessageData *));
+
+    // Start ONE worker task
+    xTaskCreate(messageWorker, "MsgWorker", 4096, NULL, 1, NULL);
+
 
     if (!SD.exists("/scripts")) {
         SD.mkdir("/scripts");

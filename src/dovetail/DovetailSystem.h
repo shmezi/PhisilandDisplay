@@ -36,6 +36,8 @@ public:
 
     static bool connectMode;
 
+    static void sendMessageToClient(const String &clientId, const String &message);
+
     static void sendMessage(const String &device, const String &message);
 
     static void initWifiName();

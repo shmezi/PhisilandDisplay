@@ -22,29 +22,48 @@
 String Game::screen = "water";
 
 void Game::onResetButton(lv_event_t *e) {
-    DovetailSystem::sendMessage("core", "reset");
+    DovetailSystem::sendMessageToClient("core", "reset");
 }
 
 //START / STOP BUTTON!
 void Game::onStartButton(lv_event_t *e) {
+    if (screen == "blackmamba") {
+        DovetailSystem::sendMessageToClient("core", "event?val=1");
+        return;
+    }
     if (!(lv_obj_has_state(ui_StartStop4, LV_STATE_CHECKED) || lv_obj_has_state(ui_StartStop1, LV_STATE_CHECKED) ||
           lv_obj_has_state(ui_StartStop2, LV_STATE_CHECKED))) {
         Serial.print("~-1");
 
-        DovetailSystem::sendMessage("core", "event?val=-1");
+        DovetailSystem::sendMessageToClient("core", "event?val=-1");
         return;
     }
-    if (screen == "water")
-        DovetailSystem::sendMessage("core", "event?val=-2");
+
     if (screen == "swings")
-        DovetailSystem::sendMessage("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl1)));
-    if (screen == "blackmamba")
-        DovetailSystem::sendMessage("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl2)));
+        DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl1)));
+
     if (screen == "ferriswheel")
-        DovetailSystem::sendMessage("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl3)));
+        DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl3)));
+}
+
+bool Game::shouldSwitchScreen = false;
+bool Game::shouldUpdateValues = false;
+
+String Game::aValue;
+String Game::bValue;
+String Game::cValue;
+
+void Game::updateValues() {
+    if (!shouldUpdateValues) return;
+    shouldUpdateValues = false;
+    setA(aValue);
+    setB(bValue);
+    setC(cValue);
 }
 
 void Game::setCurrentScreen() {
+    if (!shouldSwitchScreen) return;
+    shouldSwitchScreen = false;
     if (screen == "water") {
         lv_disp_load_scr(ui_WaterParkStart);
     }
@@ -58,6 +77,7 @@ void Game::setCurrentScreen() {
         lv_disp_load_scr(ui_FerisWheel);
     }
 }
+
 
 void Game::onBackButton(lv_event_t *e) {
     setCurrentScreen();
@@ -73,7 +93,6 @@ void Game::endRound() {
     lv_label_set_text(ui_StartStopLabel2, "Start");
     lv_label_set_text(ui_StartStopLabel4, "Start");
     lv_obj_clear_state(ui_SpeedControl1, LV_STATE_DISABLED);
-    lv_obj_clear_state(ui_SpeedControl2, LV_STATE_DISABLED);
     lv_obj_clear_state(ui_SpeedControl3, LV_STATE_DISABLED);
 }
 
@@ -94,5 +113,5 @@ void Game::setB(const String &value) {
 
 void Game::setC(const String &value) {
     lv_label_set_text(ui_DataResult, value.c_str());
-    lv_label_set_text(ui_BlackMambaSensorBValue, value.c_str());
+    lv_label_set_text(ui_BlackMambaSensorCValue, value.c_str());
 }

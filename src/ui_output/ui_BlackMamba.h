@@ -14,9 +14,6 @@ extern "C" {
 extern void ui_BlackMamba_screen_init(void);
 extern void ui_BlackMamba_screen_destroy(void);
 extern lv_obj_t *ui_BlackMamba;
-extern void ui_event_SpeedControl2( lv_event_t * e);
-extern lv_obj_t *ui_SpeedControl2;
-extern lv_obj_t *ui_Speed2;
 extern void ui_event_StartStop2( lv_event_t * e);
 extern lv_obj_t *ui_StartStop2;
 extern lv_obj_t *ui_StartStopLabel2;

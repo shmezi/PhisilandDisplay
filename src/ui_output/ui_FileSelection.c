@@ -5,7 +5,7 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_FileSelection = NULL;lv_obj_t *ui_logo3 = NULL;lv_obj_t *ui_BoardSelector = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_FileSelector = NULL;lv_obj_t *ui_ButtonZone = NULL;lv_obj_t *ui_Run = NULL;lv_obj_t *ui_StartStopLabel3 = NULL;lv_obj_t *ui_StartStop5 = NULL;lv_obj_t *ui_StartStopLabel5 = NULL;lv_obj_t *ui_ConnectedLabel = NULL;lv_obj_t *ui_SSID = NULL;
+lv_obj_t *ui_FileSelection = NULL;lv_obj_t *ui_logo3 = NULL;lv_obj_t *ui_Label3 = NULL;lv_obj_t *ui_FileSelector = NULL;lv_obj_t *ui_ButtonZone = NULL;lv_obj_t *ui_Run = NULL;lv_obj_t *ui_StartStopLabel3 = NULL;lv_obj_t *ui_StartStop5 = NULL;lv_obj_t *ui_StartStopLabel5 = NULL;lv_obj_t *ui_ConnectedLabel = NULL;lv_obj_t *ui_SSID = NULL;
 // event funtions
 void ui_event_logo3( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -47,20 +47,11 @@ lv_obj_set_align( ui_logo3, LV_ALIGN_BOTTOM_LEFT );
 lv_obj_add_flag( ui_logo3, LV_OBJ_FLAG_CLICKABLE );   /// Flags
 lv_obj_remove_flag( ui_logo3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_BoardSelector = lv_dropdown_create(ui_FileSelection);
-lv_dropdown_set_options( ui_BoardSelector, "No boards found!" );
-lv_obj_set_width( ui_BoardSelector, 214);
-lv_obj_set_height( ui_BoardSelector, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_BoardSelector, -41 );
-lv_obj_set_y( ui_BoardSelector, -63 );
-lv_obj_set_align( ui_BoardSelector, LV_ALIGN_CENTER );
-lv_obj_add_flag( ui_BoardSelector, LV_OBJ_FLAG_SCROLL_ON_FOCUS );   /// Flags
-
 ui_Label3 = lv_label_create(ui_FileSelection);
 lv_obj_set_width( ui_Label3, 310);
 lv_obj_set_height( ui_Label3, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_Label3, 7 );
-lv_obj_set_y( ui_Label3, 8 );
+lv_obj_set_y( ui_Label3, 12 );
 lv_label_set_text(ui_Label3,"Phisiland Runtime");
 lv_obj_set_style_text_align(ui_Label3, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_Label3, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -68,9 +59,9 @@ lv_obj_set_style_text_font(ui_Label3, &lv_font_montserrat_20, LV_PART_MAIN| LV_S
 ui_FileSelector = lv_roller_create(ui_FileSelection);
 lv_roller_set_options( ui_FileSelector, "No Files Found!", LV_ROLLER_MODE_NORMAL );
 lv_obj_set_width( ui_FileSelector, 214);
-lv_obj_set_height( ui_FileSelector, 98);
+lv_obj_set_height( ui_FileSelector, 139);
 lv_obj_set_x( ui_FileSelector, -42 );
-lv_obj_set_y( ui_FileSelector, 8 );
+lv_obj_set_y( ui_FileSelector, -6 );
 lv_obj_set_align( ui_FileSelector, LV_ALIGN_CENTER );
 
 ui_ButtonZone = lv_obj_create(ui_FileSelection);
@@ -98,7 +89,7 @@ ui_StartStopLabel3 = lv_label_create(ui_Run);
 lv_obj_set_width( ui_StartStopLabel3, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_StartStopLabel3, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_StartStopLabel3, LV_ALIGN_CENTER );
-lv_label_set_text(ui_StartStopLabel3,"Run");
+lv_label_set_text(ui_StartStopLabel3,"Deploy");
 
 ui_StartStop5 = lv_button_create(ui_ButtonZone);
 lv_obj_set_width( ui_StartStop5, 74);
@@ -156,7 +147,6 @@ void ui_FileSelection_screen_destroy(void)
 // NULL screen variables
 ui_FileSelection= NULL;
 ui_logo3= NULL;
-ui_BoardSelector= NULL;
 ui_Label3= NULL;
 ui_FileSelector= NULL;
 ui_ButtonZone= NULL;

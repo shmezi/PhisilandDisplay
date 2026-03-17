@@ -16,7 +16,6 @@ extern void ui_FileSelection_screen_destroy(void);
 extern lv_obj_t *ui_FileSelection;
 extern void ui_event_logo3( lv_event_t * e);
 extern lv_obj_t *ui_logo3;
-extern lv_obj_t *ui_BoardSelector;
 extern lv_obj_t *ui_Label3;
 extern lv_obj_t *ui_FileSelector;
 extern lv_obj_t *ui_ButtonZone;

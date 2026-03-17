@@ -18,6 +18,19 @@ public:
 
     static void onStartButton(lv_event_t *e);
 
+    static bool shouldSwitchScreen;
+
+    static bool shouldUpdateValues;
+
+
+    static String aValue;
+
+    static String cValue;
+
+    static String bValue;
+
+    static void updateValues();
+
     static void setCurrentScreen();
 
     static void onBackButton(lv_event_t *e);
