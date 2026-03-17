@@ -224,8 +224,8 @@ void DovetailSystem::initWifiName() {
         return;
     }
     File f = SD.open("/wifi-name.txt", FILE_WRITE);
-    const int rand1 = random(0, 30);
-    const int rand2 = random(0, 30);
+    const int rand1 = random(0, 14);
+    const int rand2 = random(0, 14);
 
     const String newWifiName = "Dovetail-" + String(verbs[rand1]) + "-" + String(nouns[rand2]);
     if (f) {
