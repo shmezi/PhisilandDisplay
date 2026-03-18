@@ -66,20 +66,31 @@ void Game::updateValues() {
 
 
 void Game::setCurrentScreen() {
-    if (!shouldSwitchScreen || HoistSystem::inSetup) return;
+    if (!shouldSwitchScreen) return;
+
+    if (HoistSystem::inSetup) {
+        Serial.println("Not switching screen due to deployment that is in process");
+        return;
+    }
+
     shouldSwitchScreen = false;
-    if (screen == "water") {
+    if (screen == "waterslide") {
         lv_disp_load_scr(ui_WaterParkStart);
+        return;
     }
     if (screen == "swings") {
         lv_disp_load_scr(ui_SwingStart);
+        return;
     }
     if (screen == "blackmamba") {
         lv_disp_load_scr(ui_BlackMamba);
+        return;
     }
     if (screen == "ferriswheel") {
         lv_disp_load_scr(ui_FerisWheel);
+        return;
     }
+    Serial.println("Unknown screen id'" + screen + "'!");
 }
 
 

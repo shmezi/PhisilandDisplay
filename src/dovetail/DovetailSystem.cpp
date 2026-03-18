@@ -527,7 +527,10 @@ void DovetailSystem::defineRoutes() {
         }
     });
     server.on("/screen", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (HoistSystem::inSetup) return;
+        if (HoistSystem::inSetup) {
+            Serial.println("Change screen recieved, however we are currently in the process of deploying!");
+            return;
+        }
         if (request->hasParam("id")) {
 
             String screenId = request->getParam("id")->value();

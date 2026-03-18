@@ -93,10 +93,12 @@ void HoistSystem::registeredClient() {
     hoistStatus = 0;
     lv_slider_set_value(ui_PairingProgress, 2,LV_ANIM_ON);
     if (deviceIndex + 1 >= deployment.devices.size()) {
+        Serial.println("Successfully deployed system!");
+        lv_disp_load_scr(ui_DeploySuccess);
         inSetup = false;
         hoistStatus = -1;
         DovetailSystem::resetAllDevices();
-        lv_disp_load_scr(ui_DeploySuccess);
+
         return;
     }
 
