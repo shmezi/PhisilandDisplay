@@ -35,6 +35,7 @@ extern "C" {
 #include "ui_SudoMode.h"
 #include "ui_SplashScreen.h"
 #include "ui_HoistSystem.h"
+#include "ui_DeploySuccess.h"
 
 ///////////////////// VARIABLES ////////////////////
 

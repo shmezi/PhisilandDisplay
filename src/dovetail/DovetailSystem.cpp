@@ -12,6 +12,7 @@
 #include <SD.h>
 
 #include "game/Game.h"
+#include "hoist/HoistSystem.h"
 #include "store/Store.h"
 #include "ui_output/ui_FileSelection.h"
 #include "widgets/label/lv_label.h"
@@ -236,6 +237,21 @@ void DovetailSystem::initWifiName() {
     }
 }
 
+void DovetailSystem::resetWifi() {
+    if (SD.exists("/wifi-name.txt")) {
+        SD.remove("/wifi-name.txt");
+    }
+    initWifiName();
+    WiFiClass::mode(WIFI_OFF);
+
+    WiFi.softAP(ssid, password);
+    macToCode.clear();
+    macToIp.clear();
+    macToName.clear();
+    nameToMac.clear();
+    Store::allowedMacs.clear();
+}
+
 void DovetailSystem::updateDeviceCount() {
     const uint8_t numStations = WiFi.softAPgetStationNum();
     String text = "Connected clients: ";
@@ -259,7 +275,13 @@ void DovetailSystem::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
             if (Store::allowedMacs.count(macStr) > 0) {
                 Serial.println("Exists!");
                 updateDeviceCount();
-
+                break;
+            }
+            if (HoistSystem::inSetup) {
+                Store::allowedMacs.insert(macStr);
+                Store::saveToMacList();
+                HoistSystem::hoistStatus = 1;
+                updateDeviceCount();
                 break;
             }
 
@@ -505,7 +527,9 @@ void DovetailSystem::defineRoutes() {
         }
     });
     server.on("/screen", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (HoistSystem::inSetup) return;
         if (request->hasParam("id")) {
+
             String screenId = request->getParam("id")->value();
 
             Serial.println("Changing screen to: " + screenId);
@@ -530,11 +554,16 @@ void DovetailSystem::defineRoutes() {
         macToIp[mac] = request->client()->remoteIP();
         Serial.println("Registered mac to ip");
         if (!macToCode.count(mac)) {
-            macToCode[mac] = "waterslide.ezra";
-            macToName[mac] = mac;
-            nameToMac[mac] = mac;
+            auto device = HoistSystem::deployment.devices[HoistSystem::deviceIndex];
+            macToCode[mac] = HoistSystem::inSetup ? device.file : "waterslide.ezra";
+            macToName[mac] = HoistSystem::inSetup ? device.deviceId : mac;
+            nameToMac[HoistSystem::inSetup ? device.deviceId : mac] = mac;
             needsSave = true;
+            if (HoistSystem::hoistStatus != 0) {
+                HoistSystem::hoistStatus = 2;
+            }
         }
+
         request->send(200, "text/plain", "Registered IP!");
     });
 }
@@ -563,6 +592,11 @@ void DovetailSystem::init() {
     server.begin();
 }
 
+void DovetailSystem::resetAllDevices() {
+    for (auto &name_to_mac : nameToMac) {
+        sendMessage(name_to_mac.second, "reset");
+    }
+}
 void DovetailSystem::connection() {
     connectMode = !connectMode;
 }

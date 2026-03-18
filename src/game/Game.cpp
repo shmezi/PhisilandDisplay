@@ -14,6 +14,7 @@
 
 #include "lv_api_map_v8.h"
 #include "dovetail/DovetailSystem.h"
+#include "hoist/HoistSystem.h"
 
 #include "ui_output/ui_BlackMamba.h"
 #include "widgets/arc/lv_arc.h"
@@ -65,7 +66,7 @@ void Game::updateValues() {
 
 
 void Game::setCurrentScreen() {
-    if (!shouldSwitchScreen) return;
+    if (!shouldSwitchScreen || HoistSystem::inSetup) return;
     shouldSwitchScreen = false;
     if (screen == "water") {
         lv_disp_load_scr(ui_WaterParkStart);

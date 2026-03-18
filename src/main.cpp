@@ -7,6 +7,7 @@
 #include "display/Display.h"
 #include "dovetail/DovetailSystem.h"
 #include "game/Game.h"
+#include "hoist/HoistSystem.h"
 #include "store/Store.h"
 #include "ui_output/ui_FileSelection.h"
 #include "ui_output/ui_SudoMode.h"
@@ -18,6 +19,10 @@ void onStartButton(lv_event_t *e) {
 
 void onResetButton(lv_event_t *e) {
     Game::onResetButton(e);
+}
+
+void onDeploy(lv_event_t *e) {
+    HoistSystem::startDeploymentWithSelected();
 }
 
 void validateSudoCode(lv_event_t *e) {
@@ -47,7 +52,7 @@ void setup() {
 
     const auto ssid = "SSID: " + DovetailSystem::ssid;
     lv_label_set_text(ui_SSID, ssid.c_str());
-
+    HoistSystem::initHoists();
 
     Serial.println("Setup done");
 }
@@ -61,6 +66,7 @@ void loop() {
     DovetailSystem::saveRegistryToSD();
     Game::setCurrentScreen();
     Game::updateValues();
+    HoistSystem::hoistLoop();
     if (Game::shouldEndActivity) {
         Game::endRound();
         Game::shouldEndActivity = false;

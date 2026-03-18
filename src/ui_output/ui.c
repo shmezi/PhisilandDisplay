@@ -38,6 +38,7 @@ ui_BlackMamba_screen_init();
 ui_SudoMode_screen_init();
 ui_SplashScreen_screen_init();
 ui_HoistSystem_screen_init();
+ui_DeploySuccess_screen_init();
 ui____initial_actions0 = lv_obj_create(NULL);
 lv_disp_load_scr( ui_WaterParkStart);
 }
@@ -52,4 +53,5 @@ ui_BlackMamba_screen_destroy();
 ui_SudoMode_screen_destroy();
 ui_SplashScreen_screen_destroy();
 ui_HoistSystem_screen_destroy();
+ui_DeploySuccess_screen_destroy();
 }

@@ -12,6 +12,7 @@ extern "C" {
 
 void onBackButton(lv_event_t * e);
 void onStartButton(lv_event_t * e);
+void onDeploy(lv_event_t * e);
 void connectBT(lv_event_t * e);
 void validateSudoCode(lv_event_t * e);
 

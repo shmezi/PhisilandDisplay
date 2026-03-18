@@ -7,6 +7,7 @@ SET(SOURCES ui_WaterParkStart.c
     ui_SudoMode.c
     ui_SplashScreen.c
     ui_HoistSystem.c
+    ui_DeploySuccess.c
     ui.c
     ui_comp_hook.c
     ui_helpers.c
