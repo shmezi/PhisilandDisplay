@@ -26,6 +26,7 @@ extern "C" {
 #include "ui_events.h"
 
 ///////////////////// SCREENS ////////////////////
+#include "ui_SplashScreen.h"
 #include "ui_WaterParkStart.h"
 #include "ui_GraphResults.h"
 #include "ui_SwingStart.h"
@@ -33,7 +34,6 @@ extern "C" {
 #include "ui_FerisWheel.h"
 #include "ui_BlackMamba.h"
 #include "ui_SudoMode.h"
-#include "ui_SplashScreen.h"
 #include "ui_HoistSystem.h"
 #include "ui_DeploySuccess.h"
 
@@ -43,8 +43,8 @@ extern "C" {
 extern lv_obj_t *ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
-LV_IMG_DECLARE( ui_img_statistics_png);   // assets/statistics.png
 LV_IMG_DECLARE( ui_img_amitlogo_png);   // assets/amitlogo.png
+LV_IMG_DECLARE( ui_img_statistics_png);   // assets/statistics.png
 LV_IMG_DECLARE( ui_img_1504419431);   // assets/theme-park.png
 
 // UI INIT

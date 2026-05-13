@@ -9,6 +9,7 @@
 #include "ui_output/ui_SwingStart.h"
 #include "ui_output/ui_WaterParkStart.h"
 #include "ui_output/ui_FerisWheel.h"
+#include "ui_output/ui_SplashScreen.h"
 
 #include <Arduino.h>
 
@@ -20,7 +21,7 @@
 #include "widgets/arc/lv_arc.h"
 #include "widgets/label/lv_label.h"
 
-String Game::screen = "water";
+String Game::screen = "init"; //Init value is used for startup to allow splash screen.
 bool Game::shouldEndActivity = false;
 
 void Game::onResetButton(lv_event_t *e) {
@@ -88,6 +89,10 @@ void Game::setCurrentScreen() {
     }
     if (screen == "ferriswheel") {
         lv_disp_load_scr(ui_FerisWheel);
+        return;
+    }
+    if (screen == "init") {
+        lv_disp_load_scr(ui_SplashScreen);
         return;
     }
     Serial.println("Unknown screen id'" + screen + "'!");

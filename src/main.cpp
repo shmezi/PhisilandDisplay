@@ -10,6 +10,7 @@
 #include "hoist/HoistSystem.h"
 #include "store/Store.h"
 #include "ui_output/ui_FileSelection.h"
+#include "ui_output/ui_SplashScreen.h"
 #include "ui_output/ui_SudoMode.h"
 
 extern "C" {
@@ -49,6 +50,12 @@ void setup() {
 
     DovetailSystem::init();
     Display::innit();
+
+    const auto codeBaseNameWithExtension = DovetailSystem::getCodeBaseForId("core");
+    const auto codeBaseName = codeBaseNameWithExtension.substring(0, codeBaseNameWithExtension.length() - 5);
+
+    lv_label_set_text(ui_DeviceId, ("Connecting to: " + codeBaseName).c_str());
+
 
     const auto ssid = "SSID: " + DovetailSystem::ssid;
     lv_label_set_text(ui_SSID, ssid.c_str());

@@ -5,7 +5,7 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_SwingStart = NULL;lv_obj_t *ui_Speed1 = NULL;lv_obj_t *ui_SpeedControl1 = NULL;lv_obj_t *ui_StartStop1 = NULL;lv_obj_t *ui_StartStopLabel1 = NULL;lv_obj_t *ui_SensorAFrame1 = NULL;lv_obj_t *ui_SensorAValue1 = NULL;lv_obj_t *ui_SensorBFrame1 = NULL;lv_obj_t *ui_SensorBValue1 = NULL;lv_obj_t *ui_DataResult = NULL;lv_obj_t *ui_Image1 = NULL;lv_obj_t *ui_logo1 = NULL;
+lv_obj_t *ui_SwingStart = NULL;lv_obj_t *ui_Speed1 = NULL;lv_obj_t *ui_SpeedControl1 = NULL;lv_obj_t *ui_StartStop1 = NULL;lv_obj_t *ui_StartStopLabel1 = NULL;lv_obj_t *ui_DataResult = NULL;lv_obj_t *ui_Image1 = NULL;lv_obj_t *ui_logo1 = NULL;lv_obj_t *ui_Container8 = NULL;lv_obj_t *ui_labelleA = NULL;lv_obj_t *ui_SensorAFrame1 = NULL;lv_obj_t *ui_SensorAValue1 = NULL;lv_obj_t *ui_Container9 = NULL;lv_obj_t *ui_labelleB = NULL;lv_obj_t *ui_SensorBFrame1 = NULL;lv_obj_t *ui_SensorBValue1 = NULL;
 // event funtions
 void ui_event_SpeedControl1( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
@@ -94,37 +94,6 @@ lv_obj_set_height( ui_StartStopLabel1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_StartStopLabel1, LV_ALIGN_CENTER );
 lv_label_set_text(ui_StartStopLabel1,"Start");
 
-ui_SensorAFrame1 = lv_obj_create(ui_SwingStart);
-lv_obj_set_width( ui_SensorAFrame1, 87);
-lv_obj_set_height( ui_SensorAFrame1, 32);
-lv_obj_set_x( ui_SensorAFrame1, 7 );
-lv_obj_set_y( ui_SensorAFrame1, 8 );
-lv_obj_remove_flag( ui_SensorAFrame1, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_SensorAFrame1, lv_color_hex(0xFFF58A), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_SensorAFrame1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_SensorAValue1 = lv_label_create(ui_SensorAFrame1);
-lv_obj_set_width( ui_SensorAValue1, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_SensorAValue1, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_SensorAValue1, LV_ALIGN_CENTER );
-lv_label_set_text(ui_SensorAValue1,"45°");
-
-ui_SensorBFrame1 = lv_obj_create(ui_SwingStart);
-lv_obj_set_width( ui_SensorBFrame1, 87);
-lv_obj_set_height( ui_SensorBFrame1, 32);
-lv_obj_set_x( ui_SensorBFrame1, -7 );
-lv_obj_set_y( ui_SensorBFrame1, 8 );
-lv_obj_set_align( ui_SensorBFrame1, LV_ALIGN_TOP_RIGHT );
-lv_obj_remove_flag( ui_SensorBFrame1, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_SensorBFrame1, lv_color_hex(0xB3BFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_SensorBFrame1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_SensorBValue1 = lv_label_create(ui_SensorBFrame1);
-lv_obj_set_width( ui_SensorBValue1, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_SensorBValue1, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_SensorBValue1, LV_ALIGN_CENTER );
-lv_label_set_text(ui_SensorBValue1,"45°");
-
 ui_DataResult = lv_label_create(ui_SwingStart);
 lv_obj_set_x( ui_DataResult, 5 );
 lv_obj_set_y( ui_DataResult, -98 );
@@ -150,6 +119,66 @@ lv_obj_set_align( ui_logo1, LV_ALIGN_BOTTOM_LEFT );
 lv_obj_add_flag( ui_logo1, LV_OBJ_FLAG_CLICKABLE );   /// Flags
 lv_obj_remove_flag( ui_logo1, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
+ui_Container8 = lv_obj_create(ui_SwingStart);
+lv_obj_remove_style_all(ui_Container8);
+lv_obj_set_width( ui_Container8, 87);
+lv_obj_set_height( ui_Container8, 55);
+lv_obj_set_x( ui_Container8, 7 );
+lv_obj_set_y( ui_Container8, 7 );
+lv_obj_remove_flag( ui_Container8, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_labelleA = lv_label_create(ui_Container8);
+lv_obj_set_width( ui_labelleA, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_labelleA, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_labelleA, LV_ALIGN_TOP_MID );
+lv_label_set_text(ui_labelleA,"Rot A");
+lv_obj_set_style_text_font(ui_labelleA, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_SensorAFrame1 = lv_obj_create(ui_Container8);
+lv_obj_set_width( ui_SensorAFrame1, 87);
+lv_obj_set_height( ui_SensorAFrame1, 32);
+lv_obj_set_align( ui_SensorAFrame1, LV_ALIGN_BOTTOM_MID );
+lv_obj_remove_flag( ui_SensorAFrame1, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_SensorAFrame1, lv_color_hex(0xFFF58A), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_SensorAFrame1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_SensorAValue1 = lv_label_create(ui_SensorAFrame1);
+lv_obj_set_width( ui_SensorAValue1, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_SensorAValue1, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_SensorAValue1, LV_ALIGN_CENTER );
+lv_label_set_text(ui_SensorAValue1,"45°");
+lv_obj_set_style_text_font(ui_SensorAValue1, &lv_font_montserrat_14, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_Container9 = lv_obj_create(ui_SwingStart);
+lv_obj_remove_style_all(ui_Container9);
+lv_obj_set_width( ui_Container9, 87);
+lv_obj_set_height( ui_Container9, 55);
+lv_obj_set_x( ui_Container9, -7 );
+lv_obj_set_y( ui_Container9, 7 );
+lv_obj_set_align( ui_Container9, LV_ALIGN_TOP_RIGHT );
+lv_obj_remove_flag( ui_Container9, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_labelleB = lv_label_create(ui_Container9);
+lv_obj_set_width( ui_labelleB, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_labelleB, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_labelleB, LV_ALIGN_TOP_MID );
+lv_label_set_text(ui_labelleB,"Rot B");
+lv_obj_set_style_text_font(ui_labelleB, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_SensorBFrame1 = lv_obj_create(ui_Container9);
+lv_obj_set_width( ui_SensorBFrame1, 87);
+lv_obj_set_height( ui_SensorBFrame1, 32);
+lv_obj_set_align( ui_SensorBFrame1, LV_ALIGN_BOTTOM_MID );
+lv_obj_remove_flag( ui_SensorBFrame1, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_SensorBFrame1, lv_color_hex(0xB3BFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_SensorBFrame1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_SensorBValue1 = lv_label_create(ui_SensorBFrame1);
+lv_obj_set_width( ui_SensorBValue1, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_SensorBValue1, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_SensorBValue1, LV_ALIGN_CENTER );
+lv_label_set_text(ui_SensorBValue1,"45°");
+
 lv_obj_add_event_cb(ui_SpeedControl1, ui_event_SpeedControl1, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_StartStop1, ui_event_StartStop1, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image1, ui_event_Image1, LV_EVENT_ALL, NULL);
@@ -167,12 +196,16 @@ ui_Speed1= NULL;
 ui_SpeedControl1= NULL;
 ui_StartStop1= NULL;
 ui_StartStopLabel1= NULL;
-ui_SensorAFrame1= NULL;
-ui_SensorAValue1= NULL;
-ui_SensorBFrame1= NULL;
-ui_SensorBValue1= NULL;
 ui_DataResult= NULL;
 ui_Image1= NULL;
 ui_logo1= NULL;
+ui_Container8= NULL;
+ui_labelleA= NULL;
+ui_SensorAFrame1= NULL;
+ui_SensorAValue1= NULL;
+ui_Container9= NULL;
+ui_labelleB= NULL;
+ui_SensorBFrame1= NULL;
+ui_SensorBValue1= NULL;
 
 }

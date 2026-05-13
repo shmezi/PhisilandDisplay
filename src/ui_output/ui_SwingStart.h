@@ -20,15 +20,19 @@ extern lv_obj_t *ui_SpeedControl1;
 extern void ui_event_StartStop1( lv_event_t * e);
 extern lv_obj_t *ui_StartStop1;
 extern lv_obj_t *ui_StartStopLabel1;
-extern lv_obj_t *ui_SensorAFrame1;
-extern lv_obj_t *ui_SensorAValue1;
-extern lv_obj_t *ui_SensorBFrame1;
-extern lv_obj_t *ui_SensorBValue1;
 extern lv_obj_t *ui_DataResult;
 extern void ui_event_Image1( lv_event_t * e);
 extern lv_obj_t *ui_Image1;
 extern void ui_event_logo1( lv_event_t * e);
 extern lv_obj_t *ui_logo1;
+extern lv_obj_t *ui_Container8;
+extern lv_obj_t *ui_labelleA;
+extern lv_obj_t *ui_SensorAFrame1;
+extern lv_obj_t *ui_SensorAValue1;
+extern lv_obj_t *ui_Container9;
+extern lv_obj_t *ui_labelleB;
+extern lv_obj_t *ui_SensorBFrame1;
+extern lv_obj_t *ui_SensorBValue1;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

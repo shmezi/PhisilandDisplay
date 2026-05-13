@@ -29,6 +29,7 @@ void ui_init( void )
 lv_disp_t *dispp = lv_display_get_default();
 lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
 lv_disp_set_theme(dispp, theme);
+ui_SplashScreen_screen_init();
 ui_WaterParkStart_screen_init();
 ui_GraphResults_screen_init();
 ui_SwingStart_screen_init();
@@ -36,22 +37,21 @@ ui_FileSelection_screen_init();
 ui_FerisWheel_screen_init();
 ui_BlackMamba_screen_init();
 ui_SudoMode_screen_init();
-ui_SplashScreen_screen_init();
 ui_HoistSystem_screen_init();
 ui_DeploySuccess_screen_init();
 ui____initial_actions0 = lv_obj_create(NULL);
-lv_disp_load_scr( ui_WaterParkStart);
+lv_disp_load_scr( ui_SplashScreen);
 }
 
 void ui_destroy( void )
-{ui_WaterParkStart_screen_destroy();
+{ui_SplashScreen_screen_destroy();
+ui_WaterParkStart_screen_destroy();
 ui_GraphResults_screen_destroy();
 ui_SwingStart_screen_destroy();
 ui_FileSelection_screen_destroy();
 ui_FerisWheel_screen_destroy();
 ui_BlackMamba_screen_destroy();
 ui_SudoMode_screen_destroy();
-ui_SplashScreen_screen_destroy();
 ui_HoistSystem_screen_destroy();
 ui_DeploySuccess_screen_destroy();
 }

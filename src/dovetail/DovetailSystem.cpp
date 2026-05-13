@@ -68,6 +68,11 @@ bool DovetailSystem::needsSave = false;
 #include <ArduinoJson.h>
 #include <SD.h>
 
+String DovetailSystem::getCodeBaseForId(const String &id) {
+    const auto  mac = nameToMac[id];
+    const auto codeBase = macToCode[mac];
+    return codeBase;
+}
 void DovetailSystem::saveRegistryToSD() {
     if (!needsSave) return;
     JsonDocument doc;

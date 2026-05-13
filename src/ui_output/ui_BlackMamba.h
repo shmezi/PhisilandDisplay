@@ -17,16 +17,22 @@ extern lv_obj_t *ui_BlackMamba;
 extern void ui_event_StartStop2( lv_event_t * e);
 extern lv_obj_t *ui_StartStop2;
 extern lv_obj_t *ui_StartStopLabel2;
-extern lv_obj_t *ui_SensorAFrame2;
-extern lv_obj_t *ui_BlackMambaSensorAValue;
-extern lv_obj_t *ui_SensorBFrame5;
-extern lv_obj_t *ui_BlackMambaSensorBValue;
 extern void ui_event_Image2( lv_event_t * e);
 extern lv_obj_t *ui_Image2;
 extern void ui_event_logo2( lv_event_t * e);
 extern lv_obj_t *ui_logo2;
+extern lv_obj_t *ui_containerA;
+extern lv_obj_t *ui_Label16;
+extern lv_obj_t *ui_SensorAFrame2;
+extern lv_obj_t *ui_BlackMambaSensorAValue;
+extern lv_obj_t *ui_containerB;
+extern lv_obj_t *ui_SensorBFrame5;
+extern lv_obj_t *ui_BlackMambaSensorBValue;
+extern lv_obj_t *ui_Label15;
+extern lv_obj_t *ui_containerC;
 extern lv_obj_t *ui_BlackMambaSensorC;
 extern lv_obj_t *ui_BlackMambaSensorCValue;
+extern lv_obj_t *ui_Label17;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

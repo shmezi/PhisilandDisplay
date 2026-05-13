@@ -28,6 +28,8 @@ public:
 
     static bool needsSave;
 
+    static String getCodeBaseForId(const String &id);
+
     static void saveRegistryToSD();
 
     static void defineRoutes();

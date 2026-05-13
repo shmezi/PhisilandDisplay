@@ -1,18 +1,18 @@
-SET(SOURCES ui_WaterParkStart.c
+SET(SOURCES ui_SplashScreen.c
+    ui_WaterParkStart.c
     ui_GraphResults.c
     ui_SwingStart.c
     ui_FileSelection.c
     ui_FerisWheel.c
     ui_BlackMamba.c
     ui_SudoMode.c
-    ui_SplashScreen.c
     ui_HoistSystem.c
     ui_DeploySuccess.c
     ui.c
     ui_comp_hook.c
     ui_helpers.c
-    ui_img_statistics_png.c
     ui_img_amitlogo_png.c
+    ui_img_statistics_png.c
     ui_img_1504419431.c)
 
 add_library(ui ${SOURCES})

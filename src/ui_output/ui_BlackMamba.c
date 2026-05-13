@@ -5,7 +5,7 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_BlackMamba = NULL;lv_obj_t *ui_StartStop2 = NULL;lv_obj_t *ui_StartStopLabel2 = NULL;lv_obj_t *ui_SensorAFrame2 = NULL;lv_obj_t *ui_BlackMambaSensorAValue = NULL;lv_obj_t *ui_SensorBFrame5 = NULL;lv_obj_t *ui_BlackMambaSensorBValue = NULL;lv_obj_t *ui_Image2 = NULL;lv_obj_t *ui_logo2 = NULL;lv_obj_t *ui_BlackMambaSensorC = NULL;lv_obj_t *ui_BlackMambaSensorCValue = NULL;
+lv_obj_t *ui_BlackMamba = NULL;lv_obj_t *ui_StartStop2 = NULL;lv_obj_t *ui_StartStopLabel2 = NULL;lv_obj_t *ui_Image2 = NULL;lv_obj_t *ui_logo2 = NULL;lv_obj_t *ui_containerA = NULL;lv_obj_t *ui_Label16 = NULL;lv_obj_t *ui_SensorAFrame2 = NULL;lv_obj_t *ui_BlackMambaSensorAValue = NULL;lv_obj_t *ui_containerB = NULL;lv_obj_t *ui_SensorBFrame5 = NULL;lv_obj_t *ui_BlackMambaSensorBValue = NULL;lv_obj_t *ui_Label15 = NULL;lv_obj_t *ui_containerC = NULL;lv_obj_t *ui_BlackMambaSensorC = NULL;lv_obj_t *ui_BlackMambaSensorCValue = NULL;lv_obj_t *ui_Label17 = NULL;
 // event funtions
 void ui_event_StartStop2( lv_event_t * e) {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -58,37 +58,6 @@ lv_obj_set_height( ui_StartStopLabel2, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_StartStopLabel2, LV_ALIGN_CENTER );
 lv_label_set_text(ui_StartStopLabel2,"DROP");
 
-ui_SensorAFrame2 = lv_obj_create(ui_BlackMamba);
-lv_obj_set_width( ui_SensorAFrame2, 87);
-lv_obj_set_height( ui_SensorAFrame2, 32);
-lv_obj_set_x( ui_SensorAFrame2, 7 );
-lv_obj_set_y( ui_SensorAFrame2, 7 );
-lv_obj_remove_flag( ui_SensorAFrame2, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_SensorAFrame2, lv_color_hex(0xFFF58A), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_SensorAFrame2, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_BlackMambaSensorAValue = lv_label_create(ui_SensorAFrame2);
-lv_obj_set_width( ui_BlackMambaSensorAValue, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_BlackMambaSensorAValue, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_BlackMambaSensorAValue, LV_ALIGN_CENTER );
-lv_label_set_text(ui_BlackMambaSensorAValue,"0ms");
-
-ui_SensorBFrame5 = lv_obj_create(ui_BlackMamba);
-lv_obj_set_width( ui_SensorBFrame5, 87);
-lv_obj_set_height( ui_SensorBFrame5, 32);
-lv_obj_set_x( ui_SensorBFrame5, 0 );
-lv_obj_set_y( ui_SensorBFrame5, 7 );
-lv_obj_set_align( ui_SensorBFrame5, LV_ALIGN_TOP_MID );
-lv_obj_remove_flag( ui_SensorBFrame5, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_obj_set_style_bg_color(ui_SensorBFrame5, lv_color_hex(0xB3BFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_bg_opa(ui_SensorBFrame5, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_BlackMambaSensorBValue = lv_label_create(ui_SensorBFrame5);
-lv_obj_set_width( ui_BlackMambaSensorBValue, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_BlackMambaSensorBValue, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_align( ui_BlackMambaSensorBValue, LV_ALIGN_CENTER );
-lv_label_set_text(ui_BlackMambaSensorBValue,"0ms");
-
 ui_Image2 = lv_image_create(ui_BlackMamba);
 lv_image_set_src(ui_Image2, &ui_img_statistics_png);
 lv_obj_set_width( ui_Image2, LV_SIZE_CONTENT);  /// 24
@@ -108,12 +77,78 @@ lv_obj_set_align( ui_logo2, LV_ALIGN_BOTTOM_LEFT );
 lv_obj_add_flag( ui_logo2, LV_OBJ_FLAG_CLICKABLE );   /// Flags
 lv_obj_remove_flag( ui_logo2, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
-ui_BlackMambaSensorC = lv_obj_create(ui_BlackMamba);
+ui_containerA = lv_obj_create(ui_BlackMamba);
+lv_obj_remove_style_all(ui_containerA);
+lv_obj_set_width( ui_containerA, 87);
+lv_obj_set_height( ui_containerA, 55);
+lv_obj_set_x( ui_containerA, 7 );
+lv_obj_set_y( ui_containerA, 7 );
+lv_obj_remove_flag( ui_containerA, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_Label16 = lv_label_create(ui_containerA);
+lv_obj_set_width( ui_Label16, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_Label16, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_Label16, LV_ALIGN_TOP_MID );
+lv_label_set_text(ui_Label16,"A");
+lv_obj_set_style_text_font(ui_Label16, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_SensorAFrame2 = lv_obj_create(ui_containerA);
+lv_obj_set_width( ui_SensorAFrame2, 87);
+lv_obj_set_height( ui_SensorAFrame2, 32);
+lv_obj_set_align( ui_SensorAFrame2, LV_ALIGN_BOTTOM_MID );
+lv_obj_remove_flag( ui_SensorAFrame2, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_SensorAFrame2, lv_color_hex(0xFFF58A), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_SensorAFrame2, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_BlackMambaSensorAValue = lv_label_create(ui_SensorAFrame2);
+lv_obj_set_width( ui_BlackMambaSensorAValue, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_BlackMambaSensorAValue, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_BlackMambaSensorAValue, LV_ALIGN_CENTER );
+lv_label_set_text(ui_BlackMambaSensorAValue,"0ms");
+
+ui_containerB = lv_obj_create(ui_BlackMamba);
+lv_obj_remove_style_all(ui_containerB);
+lv_obj_set_width( ui_containerB, 87);
+lv_obj_set_height( ui_containerB, 55);
+lv_obj_set_x( ui_containerB, 0 );
+lv_obj_set_y( ui_containerB, 7 );
+lv_obj_set_align( ui_containerB, LV_ALIGN_TOP_MID );
+lv_obj_remove_flag( ui_containerB, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_SensorBFrame5 = lv_obj_create(ui_containerB);
+lv_obj_set_width( ui_SensorBFrame5, 87);
+lv_obj_set_height( ui_SensorBFrame5, 32);
+lv_obj_set_align( ui_SensorBFrame5, LV_ALIGN_BOTTOM_MID );
+lv_obj_remove_flag( ui_SensorBFrame5, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_SensorBFrame5, lv_color_hex(0xB3BFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_SensorBFrame5, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_BlackMambaSensorBValue = lv_label_create(ui_SensorBFrame5);
+lv_obj_set_width( ui_BlackMambaSensorBValue, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_BlackMambaSensorBValue, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_BlackMambaSensorBValue, LV_ALIGN_CENTER );
+lv_label_set_text(ui_BlackMambaSensorBValue,"0ms");
+
+ui_Label15 = lv_label_create(ui_containerB);
+lv_obj_set_width( ui_Label15, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_Label15, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_Label15, LV_ALIGN_TOP_MID );
+lv_label_set_text(ui_Label15,"B");
+lv_obj_set_style_text_font(ui_Label15, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_containerC = lv_obj_create(ui_BlackMamba);
+lv_obj_remove_style_all(ui_containerC);
+lv_obj_set_width( ui_containerC, 87);
+lv_obj_set_height( ui_containerC, 55);
+lv_obj_set_x( ui_containerC, -7 );
+lv_obj_set_y( ui_containerC, 7 );
+lv_obj_set_align( ui_containerC, LV_ALIGN_TOP_RIGHT );
+lv_obj_remove_flag( ui_containerC, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+
+ui_BlackMambaSensorC = lv_obj_create(ui_containerC);
 lv_obj_set_width( ui_BlackMambaSensorC, 87);
 lv_obj_set_height( ui_BlackMambaSensorC, 32);
-lv_obj_set_x( ui_BlackMambaSensorC, -7 );
-lv_obj_set_y( ui_BlackMambaSensorC, 7 );
-lv_obj_set_align( ui_BlackMambaSensorC, LV_ALIGN_TOP_RIGHT );
+lv_obj_set_align( ui_BlackMambaSensorC, LV_ALIGN_BOTTOM_MID );
 lv_obj_remove_flag( ui_BlackMambaSensorC, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_set_style_bg_color(ui_BlackMambaSensorC, lv_color_hex(0xFFBBE1), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_bg_opa(ui_BlackMambaSensorC, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -123,6 +158,13 @@ lv_obj_set_width( ui_BlackMambaSensorCValue, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_BlackMambaSensorCValue, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_align( ui_BlackMambaSensorCValue, LV_ALIGN_CENTER );
 lv_label_set_text(ui_BlackMambaSensorCValue,"0ms");
+
+ui_Label17 = lv_label_create(ui_containerC);
+lv_obj_set_width( ui_Label17, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_Label17, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_align( ui_Label17, LV_ALIGN_TOP_MID );
+lv_label_set_text(ui_Label17,"C");
+lv_obj_set_style_text_font(ui_Label17, &lv_font_montserrat_20, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 lv_obj_add_event_cb(ui_StartStop2, ui_event_StartStop2, LV_EVENT_ALL, NULL);
 lv_obj_add_event_cb(ui_Image2, ui_event_Image2, LV_EVENT_ALL, NULL);
@@ -138,13 +180,19 @@ void ui_BlackMamba_screen_destroy(void)
 ui_BlackMamba= NULL;
 ui_StartStop2= NULL;
 ui_StartStopLabel2= NULL;
-ui_SensorAFrame2= NULL;
-ui_BlackMambaSensorAValue= NULL;
-ui_SensorBFrame5= NULL;
-ui_BlackMambaSensorBValue= NULL;
 ui_Image2= NULL;
 ui_logo2= NULL;
+ui_containerA= NULL;
+ui_Label16= NULL;
+ui_SensorAFrame2= NULL;
+ui_BlackMambaSensorAValue= NULL;
+ui_containerB= NULL;
+ui_SensorBFrame5= NULL;
+ui_BlackMambaSensorBValue= NULL;
+ui_Label15= NULL;
+ui_containerC= NULL;
 ui_BlackMambaSensorC= NULL;
 ui_BlackMambaSensorCValue= NULL;
+ui_Label17= NULL;
 
 }
