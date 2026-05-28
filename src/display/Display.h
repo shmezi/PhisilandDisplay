@@ -17,8 +17,8 @@
 #define XPT2046_CS 33
 
 // Screen resolution:
-#define TFT_HORI_RES  240
-#define TFT_VERI_RES   320
+#define TFT_HORI_RES  320
+#define TFT_VERI_RES   240
 
 
 class Display {
@@ -26,7 +26,8 @@ class Display {
      * LVGL Params:
      */
     static lv_indev_t *indev;
-    static lv_color_t *draw_buf; //draw_buf is allocated on heap otherwise the static area is too big on ESP32 at compile
+    static lv_color_t *draw_buf;
+    //draw_buf is allocated on heap otherwise the static area is too big on ESP32 at compile
     static uint32_t lastTick; //Used to track the tick timer
 
     static XPT2046_Bitbang touchscreen;
@@ -38,8 +39,8 @@ class Display {
 
 
     /*LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes*/
-// #define DRAW_BUF_SIZE (TFT_HORI_RES * TFT_VERI_RES / 10 * (LV_COLOR_DEPTH / 8))
-#define DRAW_BUF_SIZE (320 * 24)
+    // #define DRAW_BUF_SIZE (TFT_HORI_RES * TFT_VERI_RES / 10 * (LV_COLOR_DEPTH / 8))
+#define DRAW_BUF_SIZE (320 * 24* sizeof(lv_color_t))
 
 #if LV_USE_LOG != 0
     void my_print(lv_log_level_t level, const char *buf) {

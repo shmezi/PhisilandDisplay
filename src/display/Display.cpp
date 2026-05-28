@@ -4,6 +4,8 @@
 
 #include "Display.h"
 
+#include <iostream>
+
 #include "lvgl.h"
 #include "lv_api_map_v8.h"
 #include "TFT_eSPI.h"
@@ -110,25 +112,28 @@ void Display::innit() {
 
     //Initialise LVGL
     lv_init();
-    draw_buf = static_cast<lv_color_t *>(heap_caps_malloc(320 * 24, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    draw_buf = static_cast<lv_color_t *>(heap_caps_malloc(320 * 24 * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     lv_display_t *disp;
     tft.begin();
-    tft.setRotation(2); // Set to 1 for Landscape
-    tft.setSwapBytes(true); // FIXES THE "TRASH" COLORS/STATIC
+
+
     tft.fillScreen(TFT_BLACK); // Clear the garbled memory
 
     disp = lv_tft_espi_create(TFT_HORI_RES, TFT_VERI_RES, draw_buf, DRAW_BUF_SIZE);
-    // touchscreen.setRotation(2);
-    lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90); // <<-- Add line
 
     delay(1000);
-    //
+    tft.setSwapBytes(false);
     if (detectInversionRequirement()) {
-        Serial.println("Chip XXRS69 detected. Inverting colors...");
-        tft.invertDisplay(true);
-    } else {
-        Serial.println("Chip XH-32S detected. Standard colors applied.");
+        Serial.println("Screen type A");
+        tft.setRotation(2);
+
         tft.invertDisplay(false);
+        lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_180);
+
+    } else {
+        Serial.println("Screen type B");
+        tft.setRotation(3); // or whatever works for XH-32S
+        lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
     }
 
 
