@@ -124,6 +124,18 @@ void sdWorkerTask(void *pvParameters) {
 
 
 void DovetailSystem::defineRoutes() {
+
+    server.on("/register", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!request->hasParam("mac")) {
+            request->send(400, "text/plain", "Missing mac address for registration!");
+            return;
+        }
+        const auto mac = request->getParam("mac")->value();
+        registeredMacsToVerify.push_back(mac);
+        request->send(200, "text/plain", "Device has requested to register!");
+    });
+
+
     server.on("/code", HTTP_GET, [](AsyncWebServerRequest *request) {
         // String path = getLastRun(); // Your predefined file path
         if (!request->hasParam("mac")) {
@@ -137,6 +149,7 @@ void DovetailSystem::defineRoutes() {
         } else {
             path += "waterslide.ezra";
         }
+
         Serial.println(path);
         if (SD.exists(path)) {
             // Send the file. "text/plain" is usually best for code/scripts
@@ -193,19 +206,6 @@ void DovetailSystem::defineRoutes() {
         Game::shouldEndActivity = true;
         request->send(200, "text/plain", "Stopped the activity!");
     });
-
-
-    server.on("/register", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (!request->hasParam("mac")) {
-            request->send(400, "text/plain", "Missing mac address for registration!");
-            return;
-        }
-        const auto mac = request->getParam("mac")->value();
-        registeredMacsToVerify.push_back(mac);
-
-
-        request->send(200, "text/plain", "Registered IP!");
-    });
 }
 
 void DovetailSystem::connectionLoop() {
@@ -253,9 +253,6 @@ void DovetailSystem::init() {
     xTaskCreate(messageWorker, "MsgWorker", 4096, NULL, 1, NULL);
 
 
-    if (!SD.exists("/scripts")) {
-        SD.mkdir("/scripts");
-    }
     defineRoutes();
     dnsServer.start(53, "am.it", WiFi.softAPIP());
 

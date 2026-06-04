@@ -12,8 +12,6 @@
 #include "logging/Logger.h"
 
 
-std::vector<String> Store::registeredMacsToVerify{};
-
 
 std::map<String, IPAddress> Store::macToIp;
 
@@ -84,6 +82,7 @@ bool Store::getFileOrCreateDefault(const String &name, const std::function<bool(
     return false;
 }
 
+
 void Store::loadRegistryFromSD() {
 
     getFileOrCreateDefault("config.json", [](File f) {
@@ -150,4 +149,7 @@ void Store::saveRegistryToSD(File &file) {
 
 void Store::initValuesFromSD() {
     initSD();
+    if (!SD.exists("/scripts")) {
+        SD.mkdir("/scripts");
+    }
 }
