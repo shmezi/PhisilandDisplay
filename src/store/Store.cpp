@@ -7,87 +7,147 @@
 #include <FS.h>
 #include <SD.h>
 #include <set>
-std::set<String> Store::allowedMacs;
-String Store::codebase[4];
 
-void Store::startSDCard() {
+#include "dovetail/DovetailSystem.h"
+#include "logging/Logger.h"
+
+
+std::vector<String> Store::registeredMacsToVerify{};
+
+
+std::map<String, IPAddress> Store::macToIp;
+
+std::map<String, String> Store::macToName;
+
+std::map<String, String> Store::nameToMac;
+
+
+std::map<String, String> Store::macToCode;
+
+bool Store::needsSave = false;
+
+
+void Store::initSD() {
+    Logger::log("Initializing SD card...");
     SD.begin(5, SPI, 4000000, "/sd", 10);
-
+    Logger::log("Card initialized.");
 }
-String readScriptFileToString(const String &path) {
 
-    File file = SD.open("/" + path + ".ezra");
-    if (!file) {
-        Serial.println("Failed to open " + path + " script.");
+String readScriptFileToString(const String &path) {
+    File script = SD.open("/" + path + ".ezra");
+    if (!script) {
+        Logger::error("Failed to open " + path + " script.");
         return "";
     }
 
     String fileContent = "";
 
-    while (file.available()) {
-        char charRead = file.read();
+    while (script.available()) {
+        const char charRead = script.read();
         fileContent += charRead;
     }
 
     // Close the file
-    file.close();
+    script.close();
 
     return fileContent;
 }
 
-
-void Store::initValuesFromSD() {
-    while (!Serial) {
-        // Wait for Serial Monitor to open
+bool Store::ensureFileExists(const String &name) {
+    if (SD.exists("/" + name)) return true;
+    Logger::log(name + " not found. Initializing empty file.");
+    File file = SD.open("/" + name, FILE_WRITE);
+    if (!file) {
+        Logger::error("Failed to open file for writing");
+        return false;
     }
-
-    Serial.println("Initializing SD card...");
-
-    startSDCard();
-
-    Serial.println("Card initialized.");
-
-    File dataFile = SD.open("/allowed-mac.txt");
-
-    if (dataFile) {
-        Serial.println("Registered mac addresses:");
-        while (dataFile.available()) {
-            String line = dataFile.readStringUntil('\n');
-            line.trim();
-
-            allowedMacs.insert(line);
-            Serial.println("MAC: '" + line + "'"); // Print the line to the Serial Monitor
-        }
-        dataFile.close();
-    } else {
-        Serial.println("Error opening allowed-mac.txt!");
-    }
-
-
-    // codebase[0] = readCodeFileToString("waterslide");
-    // codebase[1] = readCodeFileToString("blackmamba");
-    // codebase[2] = readCodeFileToString("swings");
-    // codebase[3] = readCodeFileToString("ferriswheel");
+    file.close();
+    return false;
 }
 
-void Store::saveToMacList() {
-
-    startSDCard();
-
-    // Opening with FILE_WRITE replaces the old file
-    File file = SD.open("/allowed-mac.txt", FILE_WRITE);
-
+bool Store::getFileOrCreateDefault(const String &name, const std::function<bool(File &file)> &defaultValue) {
+    if (SD.exists("/" + name)) return true;
+    Logger::log(name + " not found. Initializing empty file.");
+    File file = SD.open("/" + name, FILE_WRITE);
     if (!file) {
-        Serial.println("Failed to open file for writing");
+        Logger::error("Failed to open file for writing");
+        return false;
+    }
+    Logger::log("Running default operations on file.");
+    const auto defaultConfigApplied = defaultValue(file);
+    if (defaultConfigApplied)
+        Logger::log("Default file applied successfully.");
+    else
+        Logger::error("Failed to apply default file!");
+
+    file.close();
+    return false;
+}
+
+void Store::loadRegistryFromSD() {
+
+    getFileOrCreateDefault("config.json", [](File f) {
+        saveRegistryToSD(f);
+        return true;
+    });
+
+
+    File file = SD.open("/config.json", FILE_READ);
+    if (file.size() == 0) {
+        file.close();
         return;
     }
 
-    // Iterate through the set and write each element
-    for (const auto &value: allowedMacs) {
-        file.println(value);
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, file);
+    file.close();
+
+    if (error) {
+        Logger::error("JSON Parse Error: " + String(error.c_str()));
+        return;
     }
 
-    file.close();
-    Serial.println("Set successfully saved (replaced old file).");
+    // Clear current RAM maps to prevent data duplication/stale entries
+    DovetailSystem::macToName.clear();
+    DovetailSystem::macToCode.clear();
 
+    JsonObject root = doc.as<JsonObject>();
+    for (JsonPair p: root) {
+        String mac = p.key().c_str();
+        JsonObject data = p.value();
+
+        DovetailSystem::macToCode[mac] = data["code"] | "default.ezra";
+
+
+        // Build nameToMac Map (Name is Key, MAC is Value)
+        String name = data["name"] | "NoName";
+        DovetailSystem::macToName[mac] = name;
+        DovetailSystem::nameToMac[name] = mac;
+    }
+    Logger::log("Loaded " + String(DovetailSystem::macToCode.size()) + " devices from SD.");
+}
+
+void Store::saveRegistryToSD(File &file) {
+    if (!DovetailSystem::needsSave) return;
+    JsonDocument doc;
+
+    for (auto const &[mac, code]: DovetailSystem::macToCode) {
+        doc[mac]["code"] = code;
+
+        // Check if this MAC also has a nickname in nameToMac
+        // We iterate through nameToMac to find the matching MAC
+        for (auto const &[m, name]: DovetailSystem::macToName) {
+            if (m == mac) {
+                doc[mac]["name"] = name;
+                break;
+            }
+        }
+    }
+    serializeJson(doc, file);
+
+    DovetailSystem::needsSave = false;
+}
+
+void Store::initValuesFromSD() {
+    initSD();
 }

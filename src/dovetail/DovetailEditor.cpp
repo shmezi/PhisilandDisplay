@@ -143,7 +143,8 @@ void DovetailEditor::initEditorRoutes() {
             String deviceId = request->getParam("mac")->value(); // This is the MAC
 
             // 1. Save locally so the Master knows what it last deployed
-            Serial.println("Running for device '" + deviceId + "' with " + String(DovetailSystem::macToIp.count(deviceId)));
+            Serial.println(
+                "Running for device '" + deviceId + "' with " + String(DovetailSystem::macToIp.count(deviceId)));
 
             // 2. Lookup the IP for this specific device
             // If you are using a std::map<String, IPAddress> macToIp:

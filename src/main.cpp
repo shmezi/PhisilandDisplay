@@ -8,6 +8,7 @@
 #include "dovetail/DovetailSystem.h"
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
+#include "logging/Logger.h"
 #include "store/Store.h"
 #include "ui_output/ui_FileSelection.h"
 #include "ui_output/ui_SplashScreen.h"
@@ -46,6 +47,7 @@ void connectBT(lv_event_t *e) {
 void setup() {
     Serial.begin(115200);
     esp_task_wdt_init(5, true);
+    Logger::innitLogger();
     Store::initValuesFromSD();
 
     DovetailSystem::init();

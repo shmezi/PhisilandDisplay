@@ -7,34 +7,12 @@
 #include <DNSServer.h>
 #include <esp_wifi.h>
 #include <ESPAsyncWebServer.h>
-#include <AsyncTCP.h>
 #include <map>
 #include <SD.h>
 
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
 #include "store/Store.h"
-#include "ui_output/ui_FileSelection.h"
-#include "widgets/label/lv_label.h"
-
-std::vector<String> DovetailSystem::registeredMacsToVerify{};
-
-
-std::map<String, IPAddress> DovetailSystem::macToIp;
-
-std::map<String, String> DovetailSystem::macToName;
-
-std::map<String, String> DovetailSystem::nameToMac;
-
-
-std::map<String, String> DovetailSystem::macToCode;
-
-
-#include <ArduinoJson.h>
-#include <SD.h>
-bool DovetailSystem::needsSave = false;
-#include <ArduinoJson.h>
-#include <SD.h>
 
 String DovetailSystem::getCodeBaseForId(const String &id) {
     const auto mac = nameToMac[id];

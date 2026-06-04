@@ -1,14 +1,14 @@
 //
 // Created by Ezra Golombek on 11/03/2026.
 //
+#ifndef PHISILANDDISPLAY_DOVETAILSYSTEM_H
+#define PHISILANDDISPLAY_DOVETAILSYSTEM_H
 #include <Arduino.h>
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <map>
 
 #include "ESPAsyncWebServer.h"
-#ifndef PHISILANDDISPLAY_DOVETAILSYSTEM_H
-#define PHISILANDDISPLAY_DOVETAILSYSTEM_H
 
 struct FileWritePacket {
     char path[64];
@@ -28,16 +28,6 @@ public:
     static String ssid;
     static DNSServer dnsServer;
     static AsyncWebServer server;
-
-    static bool needsSave;
-
-    static std::map<String, IPAddress> macToIp;
-
-    static std::map<String, String> macToName;
-
-    static std::map<String, String> nameToMac;
-
-    static std::map<String, String> macToCode;
 
     static String getCodeBaseForId(const String &id);
 

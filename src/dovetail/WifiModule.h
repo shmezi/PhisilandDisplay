@@ -11,10 +11,6 @@
 class WifiModule {
     static String ssid;
 
-    static void loadRegistryFromSD();
-
-    static void saveRegistryToSD();
-
     static void initWifiName();
 
     static void updateDeviceCount();
