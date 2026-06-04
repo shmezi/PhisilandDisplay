@@ -54,58 +54,34 @@ const char *nouns[] = {
     "Fern",
     "Moss"
 };
+
+
 String WifiModule::ssid = "Dovetail-ERROR-SD-NOT-INSERTED!";
 auto password = "Phisiland";
 
-
-
+String generateWifiName() {
+    const auto verb = verbs[random(0, 14)];
+    const auto noun = nouns[random(0, 14)];
+    return String("Dovetail-") + verb + "-" + noun;
+}
 
 void WifiModule::initWifiName() {
-    if (SD.exists("/wifi-name.txt")) {
-        File f = SD.open("/wifi-name.txt", FILE_READ);
-        if (f) {
-            ssid = f.readString();
-            f.close();
-        }
-        return;
-    }
-    File f = SD.open("/wifi-name.txt", FILE_WRITE);
-    const int rand1 = random(0, 14);
-    const int rand2 = random(0, 14);
-
-    const String newWifiName = "Dovetail-" + String(verbs[rand1]) + "-" + String(nouns[rand2]);
-    if (f) {
-        f.print(newWifiName);
+    Store::getFileOrCreateDefault("wifi-name.txt", [](File &f) {
+        f.print(generateWifiName());
         f.close();
-        Serial.println("Stored wifi name: " + newWifiName);
-        ssid = newWifiName;
-    }
+        return true;
+    });
 }
 
 
 void WifiModule::updateDeviceCount() {
-    const uint8_t numStations = WiFi.softAPgetStationNum();
-    String text = "Connected clients: ";
-    text += String(numStations);
-    lv_label_set_text(ui_ConnectedLabel, text.c_str());
+    const uint8_t clientCount = WiFi.softAPgetStationNum();
+    auto updatedConnectedClientsLabel = String("Connected clients: ") + clientCount;
+
+    lv_label_set_text(ui_ConnectedLabel, updatedConnectedClientsLabel.c_str());
 }
 
-void WifiModule::wifiEvent(WiFiEvent_t event, arduino_event_info_t info) {
-    switch (event) {
-        case ARDUINO_EVENT_WIFI_STA_GOT_IP: {
-            // For the ESP32's own MAC when it gets an IP
-            Serial.print("ESP32 Station MAC: ");
-            Serial.println(WiFi.macAddress());
-            break;
-        }
 
-        case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED: {
-            updateDeviceCount();
-        }
-        default:
-            break;
-    }
-}
 
 void WifiModule::resetWifi() {
     if (SD.exists("/wifi-name.txt")) {
@@ -115,9 +91,14 @@ void WifiModule::resetWifi() {
     WiFiClass::mode(WIFI_OFF);
 
     WiFi.softAP(ssid, password);
-    DovetailSystem::macToCode.clear();
-    DovetailSystem::macToIp.clear();
-    DovetailSystem::macToName.clear();
-    DovetailSystem::nameToMac.clear();
+
+    WiFi.setSleep(false);
+    WiFi.onEvent(wifiEvent);
+    DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
+    DovetailSystem::server.begin();
+    Store::macToCode.clear();
+    Store::macToIp.clear();
+    Store::macToName.clear();
+    Store::nameToMac.clear();
     Store::allowedMacs.clear();
 }

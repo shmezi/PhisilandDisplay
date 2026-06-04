@@ -38,6 +38,8 @@ public:
 
     static void saveRegistryToSD(File &file);
 
+    static String getScriptFilePathByMac(const String&);
+
     static void initValuesFromSD();
 
 };

@@ -78,13 +78,13 @@ void DovetailEditor::initEditorRoutes() {
         JsonDocument responseDoc;
         JsonArray array = responseDoc.to<JsonArray>();
 
-        for (auto &v: DovetailSystem::macToIp) {
+        for (auto &v: Store::macToIp) {
             auto &mac = v.first;
             auto &ip = v.second;
             JsonObject device = array.add<JsonObject>();
             device["mac"] = mac;
             device["ip"] = ip;
-            device["name"] = DovetailSystem::macToName[mac]; // Use MAC as name if empty
+            device["name"] = Store::macToName[mac]; // Use MAC as name if empty
         }
 
         String output;
@@ -95,9 +95,9 @@ void DovetailEditor::initEditorRoutes() {
         if (request->hasParam("mac") && request->hasParam("name")) {
             String mac = request->getParam("mac")->value();
             String name = request->getParam("name")->value();
-            DovetailSystem::macToName[mac] = name;
-            DovetailSystem::nameToMac[name] = mac;
-            DovetailSystem::needsSave = true;
+            Store::macToName[mac] = name;
+            Store::nameToMac[name] = mac;
+            Store::needsSave = true;
             request->send(200, "text/plain", "Renamed");
         }
     });
@@ -144,17 +144,17 @@ void DovetailEditor::initEditorRoutes() {
 
             // 1. Save locally so the Master knows what it last deployed
             Serial.println(
-                "Running for device '" + deviceId + "' with " + String(DovetailSystem::macToIp.count(deviceId)));
+                "Running for device '" + deviceId + "' with " + String(Store::macToIp.count(deviceId)));
 
             // 2. Lookup the IP for this specific device
             // If you are using a std::map<String, IPAddress> macToIp:
-            if (DovetailSystem::macToIp.count(deviceId)) {
+            if (Store::macToIp.count(deviceId)) {
                 // IPAddress targetIP = macToIp[deviceId];
 
                 // 3. Send the message to the specific device
                 // Assuming sendMessage handles the IP routing
                 DovetailSystem::sendMessage(deviceId, "reset");
-                DovetailSystem::macToCode[deviceId] = filename;
+                Store::macToCode[deviceId] = filename;
                 DovetailSystem::needsSave = true;
                 request->send(200, "text/plain", "Deploying " + filename + " to " + deviceId);
             } else {

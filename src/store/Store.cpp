@@ -12,7 +12,6 @@
 #include "logging/Logger.h"
 
 
-
 std::map<String, IPAddress> Store::macToIp;
 
 std::map<String, String> Store::macToName;
@@ -29,6 +28,24 @@ void Store::initSD() {
     Logger::log("Initializing SD card...");
     SD.begin(5, SPI, 4000000, "/sd", 10);
     Logger::log("Card initialized.");
+}
+
+QueueHandle_t sdQueue;
+// Background Task for SD Writing
+void sdWorkerTask(void *pvParameters) {
+    FileWritePacket packet{};
+    for (;;) {
+        // Wait indefinitely for a packet from the queue
+        if (xQueueReceive(sdQueue, &packet, portMAX_DELAY)) {
+            File f = SD.open(packet.path, packet.isFirst ? FILE_WRITE : FILE_APPEND);
+            if (f) {
+                f.write(packet.data, packet.len);
+                f.close();
+            }
+            // CRITICAL: Free the memory we allocated in the callback
+            free(packet.data);
+        }
+    }
 }
 
 String readScriptFileToString(const String &path) {
@@ -84,7 +101,6 @@ bool Store::getFileOrCreateDefault(const String &name, const std::function<bool(
 
 
 void Store::loadRegistryFromSD() {
-
     getFileOrCreateDefault("config.json", [](File f) {
         saveRegistryToSD(f);
         return true;
@@ -147,9 +163,17 @@ void Store::saveRegistryToSD(File &file) {
     DovetailSystem::needsSave = false;
 }
 
+String Store::getScriptFilePathByMac(const String &mac) {
+    auto assignedScriptToMac = macToCode.find(mac);
+    auto macHasAssignedCodebase = assignedScriptToMac != macToCode.end();
+    return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "waterslide.ezra");
+}
 void Store::initValuesFromSD() {
     initSD();
     if (!SD.exists("/scripts")) {
         SD.mkdir("/scripts");
     }
+    sdQueue = xQueueCreate(60, sizeof(FileWritePacket));
+
+    xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
 }
