@@ -14,7 +14,7 @@ void Store::startSDCard() {
     SD.begin(5, SPI, 4000000, "/sd", 10);
 
 }
-String readCodeFileToString(const String &path) {
+String readScriptFileToString(const String &path) {
 
     File file = SD.open("/" + path + ".ezra");
     if (!file) {

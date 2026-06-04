@@ -4,22 +4,25 @@
 #include <Arduino.h>
 #include <WebServer.h>
 #include <DNSServer.h>
+#include <map>
 
 #include "ESPAsyncWebServer.h"
 #ifndef PHISILANDDISPLAY_DOVETAILSYSTEM_H
 #define PHISILANDDISPLAY_DOVETAILSYSTEM_H
 
+struct FileWritePacket {
+    char path[64];
+    uint8_t *data;
+    size_t len;
+    bool isFirst;
+};
+
 
 class DovetailSystem {
+    static void kickUserWithMac(const String &macToEvict);
 
 
-
-    static void loadRegistryFromSD();
-
-    static void kickUser(uint8_t aid);
-
-
-    static void wifiEvent(WiFiEvent_t event, arduino_event_info_t info);
+    static std::vector<String> registeredMacsToVerify;
 
 public:
     static String ssid;
@@ -28,11 +31,20 @@ public:
 
     static bool needsSave;
 
+    static std::map<String, IPAddress> macToIp;
+
+    static std::map<String, String> macToName;
+
+    static std::map<String, String> nameToMac;
+
+    static std::map<String, String> macToCode;
+
     static String getCodeBaseForId(const String &id);
 
-    static void saveRegistryToSD();
 
     static void defineRoutes();
+
+    static void connectionLoop();
 
     static void init();
 
@@ -44,12 +56,6 @@ public:
 
     static void sendMessage(const String &device, const String &message);
 
-    static void initWifiName();
-
-    static void resetWifi();
-
-
-    static void updateDeviceCount();
 
     static void connection();
 };
