@@ -114,20 +114,20 @@ void DovetailSystem::connectionLoop() {
     macToIp[mac] = request->client()->remoteIP();
     Serial.println("Registered mac to ip");
     if (!macToCode.count(mac)) {
-        auto device = HoistSystem::deployment.devices[HoistSystem::deviceIndex];
+        auto device = HoistSystem::currentHoistInDeployment.devices[HoistSystem::deviceIndex];
         macToCode[mac] = HoistSystem::inSetup ? device.file : "waterslide.ezra";
         macToName[mac] = HoistSystem::inSetup ? device.deviceId : mac;
         nameToMac[HoistSystem::inSetup ? device.deviceId : mac] = mac;
         needsSave = true;
-        if (HoistSystem::hoistStatus != 0) {
-            HoistSystem::hoistStatus = 2;
+        if (HoistSystem::status != 0) {
+            HoistSystem::status = 2;
         }
     }
 
     if (HoistSystem::inSetup) {
         Store::allowedMacs.insert(macStr);
         Store::saveToMacList();
-        HoistSystem::hoistStatus = 1;
+        HoistSystem::status = 1;
         updateDeviceCount();
         break;
     }

@@ -9,25 +9,33 @@
 #include <vector>
 #include <WString.h>
 
-
-struct Script {
+/*
+ * Configuration for an individual config.
+ */
+struct ClientConfig {
     String deviceId;
     String description;
     String file;
 };
 
-struct Deployment {
+/**
+ * Configuration for a hoist that can be deployed.
+ */
+struct Hoist {
     String id;
     String description;
-    std::vector<Script> devices;
+    std::vector<ClientConfig> devices;
 };
-
+enum HoistStatus {
+    NOT_IN_HOIST
+};
 class HoistSystem {
-    static std::map<String, Deployment> hoists;
+
 
 
 public:
-    static Deployment deployment;
+    static std::map<String, Hoist> hoists;
+    static Hoist currentHoistInDeployment;
     static int deviceIndex;
     static void initHoists();
 
@@ -35,7 +43,7 @@ public:
 
     static void connectedNewClient();
 
-    static int hoistStatus;
+    static HoistStatus status;
 
     static void hoistLoop();
 

@@ -9,9 +9,12 @@
 #include <set>
 
 #include "dovetail/DovetailSystem.h"
+#include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
+#include "widgets/roller/lv_roller.h"
 
 
+struct ClientConfig;
 std::map<String, IPAddress> Store::macToIp;
 
 std::map<String, String> Store::macToName;
@@ -70,6 +73,10 @@ String readScriptFileToString(const String &path) {
 
 bool Store::ensureFileExists(const String &name) {
     if (SD.exists("/" + name)) return true;
+    if (name.indexOf('.') == -1) {
+        SD.mkdir("/" + name);
+        return true;
+    }
     Logger::log(name + " not found. Initializing empty file.");
     File file = SD.open("/" + name, FILE_WRITE);
     if (!file) {
@@ -99,6 +106,73 @@ bool Store::getFileOrCreateDefault(const String &name, const std::function<bool(
     return false;
 }
 
+/**
+ * Check if the file passed to it is in fact a file, not a directory. And that it is not one of the internal mac hidden files.
+ * @param file The file to check
+ * @return The result of the check
+ */
+bool Store::isStandardFile(File &file) {
+    return !(file.isDirectory() || String(file.name()).startsWith("._"));
+}
+
+String Store::hoistIDS = "";
+
+void Store::registerHoistId(const String &id) {
+    if (hoistIDS != "") hoistIDS += "\n";
+    hoistIDS += id;
+}
+
+ClientConfig Store::loadClientFromVariant(const JsonVariant &clientDocument) {
+    const auto device = clientDocument.as<JsonObject>();
+
+    const auto deviceId = device["id"].as<String>();
+    const auto deviceDescription = device["description"].as<String>();
+    const auto deviceFile = device["file"].as<String>();
+    return {deviceId, deviceDescription, deviceFile};
+}
+
+Hoist Store::loadHoistFromDocument(JsonDocument &hoistDocument) {
+    const auto hoistID = hoistDocument["name"].as<String>();
+    const auto description = hoistDocument["description"].as<String>();
+    std::vector<ClientConfig> devices{};
+
+    registerHoistId(hoistID);
+    const auto deviceList = hoistDocument["devices"].as<JsonArray>();
+    for (const auto &deviceDocument: deviceList) {
+        devices.push_back(loadClientFromVariant(deviceDocument));
+    }
+    return {hoistID, description, devices};
+}
+
+void Store::loadHoists() {
+    hoistIDS = "";
+    auto hoistsDirectory = SD.open("/hoists");
+
+
+    auto hoistFile = hoistsDirectory.openNextFile();
+    while (hoistFile) {
+        if (!isStandardFile(hoistFile)) {
+            hoistFile = hoistsDirectory.openNextFile();
+            continue;
+        }
+
+        JsonDocument hoistDocument;
+        DeserializationError error = deserializeJson(hoistDocument, hoistFile);
+        if (error) {
+            Logger::error("Error reading hoist file: '" + String(hoistFile.name()) + "'!");
+            continue;
+        }
+        const auto hoist = loadHoistFromDocument(hoistDocument);
+
+        HoistSystem::hoists[hoist.id] = hoist;
+
+
+        hoistFile = hoistsDirectory.openNextFile();
+    }
+
+
+    hoistsDirectory.close();
+}
 
 void Store::loadRegistryFromSD() {
     getFileOrCreateDefault("config.json", [](File f) {
@@ -123,35 +197,35 @@ void Store::loadRegistryFromSD() {
     }
 
     // Clear current RAM maps to prevent data duplication/stale entries
-    DovetailSystem::macToName.clear();
-    DovetailSystem::macToCode.clear();
+    macToName.clear();
+    macToCode.clear();
 
     JsonObject root = doc.as<JsonObject>();
     for (JsonPair p: root) {
         String mac = p.key().c_str();
         JsonObject data = p.value();
 
-        DovetailSystem::macToCode[mac] = data["code"] | "default.ezra";
+        macToCode[mac] = data["code"] | "default.ezra";
 
 
         // Build nameToMac Map (Name is Key, MAC is Value)
         String name = data["name"] | "NoName";
-        DovetailSystem::macToName[mac] = name;
-        DovetailSystem::nameToMac[name] = mac;
+        macToName[mac] = name;
+        nameToMac[name] = mac;
     }
-    Logger::log("Loaded " + String(DovetailSystem::macToCode.size()) + " devices from SD.");
+    Logger::log("Loaded " + String(macToCode.size()) + " devices from SD.");
 }
 
 void Store::saveRegistryToSD(File &file) {
-    if (!DovetailSystem::needsSave) return;
+    if (!needsSave) return;
     JsonDocument doc;
 
-    for (auto const &[mac, code]: DovetailSystem::macToCode) {
+    for (auto const &[mac, code]: macToCode) {
         doc[mac]["code"] = code;
 
         // Check if this MAC also has a nickname in nameToMac
         // We iterate through nameToMac to find the matching MAC
-        for (auto const &[m, name]: DovetailSystem::macToName) {
+        for (auto const &[m, name]: macToName) {
             if (m == mac) {
                 doc[mac]["name"] = name;
                 break;
@@ -160,7 +234,7 @@ void Store::saveRegistryToSD(File &file) {
     }
     serializeJson(doc, file);
 
-    DovetailSystem::needsSave = false;
+    needsSave = false;
 }
 
 String Store::getScriptFilePathByMac(const String &mac) {
@@ -168,11 +242,12 @@ String Store::getScriptFilePathByMac(const String &mac) {
     auto macHasAssignedCodebase = assignedScriptToMac != macToCode.end();
     return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "waterslide.ezra");
 }
+
 void Store::initValuesFromSD() {
     initSD();
-    if (!SD.exists("/scripts")) {
-        SD.mkdir("/scripts");
-    }
+    ensureFileExists("scripts");
+    ensureFileExists("hoists");
+
     sdQueue = xQueueCreate(60, sizeof(FileWritePacket));
 
     xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);

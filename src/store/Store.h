@@ -10,6 +10,9 @@
 #include <map>
 #include <bits/stl_vector.h>
 
+#include "ArduinoJson/Document/JsonDocument.hpp"
+#include "hoist/HoistSystem.h"
+
 
 class Store {
 public:
@@ -33,6 +36,18 @@ public:
     static bool ensureFileExists(const String &name);
 
     static bool getFileOrCreateDefault(const String &name, const std::function<bool(File &file)>& defaultValue);
+
+    static bool isStandardFile(File &file);
+
+    static String hoistIDS;
+
+    static void registerHoistId(const String &id);
+
+    static ClientConfig loadClientFromVariant(const ArduinoJson::JsonVariant &clientDocument);
+
+    static Hoist loadHoistFromDocument(ArduinoJson::JsonDocument &hoistDocument);
+
+    static void loadHoists();
 
     static void loadRegistryFromSD();
 

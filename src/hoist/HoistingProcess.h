@@ -1,0 +1,13 @@
+//
+// Created by Ezra Golombek on 05/06/2026.
+//
+
+#ifndef PHISILANDDISPLAY_HOISTINGPROCESS_H
+#define PHISILANDDISPLAY_HOISTINGPROCESS_H
+
+
+class HoistingProcess {
+};
+
+
+#endif //PHISILANDDISPLAY_HOISTINGPROCESS_H
