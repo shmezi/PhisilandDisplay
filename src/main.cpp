@@ -6,6 +6,7 @@
 
 #include "display/Display.h"
 #include "dovetail/DovetailSystem.h"
+#include "dovetail/WifiModule.h"
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
@@ -53,6 +54,7 @@ void setup() {
     DovetailSystem::init();
     Display::innit();
 
+
     const auto codeBaseNameWithExtension = DovetailSystem::getCodeBaseForId("core");
     const auto codeBaseName = codeBaseNameWithExtension.substring(0, codeBaseNameWithExtension.length() - 5);
 
@@ -72,7 +74,6 @@ char receivedChars[64]; // Buffer to store the received data
 void loop() {
     Display::lvglTask();
     DovetailSystem::dnsServer.processNextRequest();
-    DovetailSystem::saveRegistryToSD();
     Game::setCurrentScreen();
     Game::updateValues();
     HoistSystem::hoistLoop();

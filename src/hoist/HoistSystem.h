@@ -26,22 +26,22 @@ struct Hoist {
     String description;
     std::vector<ClientConfig> devices;
 };
+
 enum HoistStatus {
-    NOT_IN_HOIST
+    NONCONNECTED,
+    CONNECTED,
+    REGISTERED
 };
+
 class HoistSystem {
-
-
-
 public:
     static std::map<String, Hoist> hoists;
     static Hoist currentHoistInDeployment;
     static int deviceIndex;
+
     static void initHoists();
 
-    static void loadCurrentDevice();
-
-    static void connectedNewClient();
+    static void startDeployment();
 
     static HoistStatus status;
 
@@ -50,6 +50,7 @@ public:
     static void registeredClient();
 
     static void startDeploymentWithSelected();
+
     static bool inSetup;
 };
 

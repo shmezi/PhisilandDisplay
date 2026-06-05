@@ -82,23 +82,28 @@ void WifiModule::updateDeviceCount() {
 }
 
 
+void WifiModule::startWifi() {
+    WiFi.softAP(ssid, password);
+
+    WiFi.setSleep(false);
+    // WiFi.onEvent(wifiEvent);
+
+    DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
+    DovetailSystem::server.begin();
+}
 
 void WifiModule::resetWifi() {
-    if (SD.exists("/wifi-name.txt")) {
-        SD.remove("/wifi-name.txt");
-    }
+    Store::ensureDeleted("wifi-name.txt");
     initWifiName();
+
     WiFiClass::mode(WIFI_OFF);
 
     WiFi.softAP(ssid, password);
 
     WiFi.setSleep(false);
-    WiFi.onEvent(wifiEvent);
-    DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
-    DovetailSystem::server.begin();
-    Store::macToCode.clear();
-    Store::macToIp.clear();
-    Store::macToName.clear();
-    Store::nameToMac.clear();
-    Store::allowedMacs.clear();
+    // WiFi.onEvent(wifiEvent);
+
+    DovetailSystem::dnsServer.stop();
+    DovetailSystem::server.end();
+    startWifi();
 }

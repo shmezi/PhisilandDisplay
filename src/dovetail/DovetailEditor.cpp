@@ -3,36 +3,34 @@
 //
 
 #include "DovetailEditor.h"
-
 #include "DovetailSystem.h"
 
-
 #include <HTTPClient.h>
+#include <DNSServer.h>
 #include <esp_wifi.h>
+#include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
+
+
 #include <map>
 #include <SD.h>
 #include "game/Game.h"
-#include "hoist/HoistSystem.h"
 #include "store/Store.h"
-#include "ui_output/ui_FileSelection.h"
-#include "widgets/label/lv_label.h"
 
 
 void DovetailEditor::initEditorRoutes() {
-    const auto server = &DovetailSystem::server;
-
-    server->on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    auto server = DovetailSystem::server;
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SD, "/index.html", "text/html");
     });
-    server->serveStatic("/lib", SD, "/lib/");
+    server.serveStatic("/lib", SD, "/lib/");
 
-    server->on("/save", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/save", HTTP_POST, [](AsyncWebServerRequest *request) {
                    // Header response handled automatically or on completion
                }, nullptr, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
                    String fileName = "untitled.ezra";
                    if (request->hasParam("name", false)) {
-                       fileName = request->getParam("name", false)->value();
+                       fileName = request->getParam("name", false);
                    }
 
                    FileWritePacket packet{};
@@ -48,7 +46,7 @@ void DovetailEditor::initEditorRoutes() {
                        memcpy(packet.data, data, len);
 
                        // 4. Push to queue. If queue is full, wait up to 100ms.
-                       if (xQueueSend(DovetailSystem::sdQueue, &packet, pdMS_TO_TICKS(100)) != pdPASS) {
+                       if (xQueueSend(Store::sdQueue, &packet, pdMS_TO_TICKS(100)) != pdPASS) {
                            free(packet.data); // Clean up if queue failed
                            Serial.println("SD Queue Full!");
                        }
@@ -59,9 +57,9 @@ void DovetailEditor::initEditorRoutes() {
                    }
                });
     // Ensure this matches your JS call
-    server->on("/read", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/read", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("name")) {
-            String filename = request->getParam("name")->value();
+            String filename = request->getParam("name");
             String path = "/scripts/" + filename; // Must match the folder in /list
 
             if (SD.exists(path)) {
@@ -71,7 +69,7 @@ void DovetailEditor::initEditorRoutes() {
             }
         }
     });
-    server->on("/list-devices", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/list-devices", HTTP_GET, [](AsyncWebServerRequest *request) {
         JsonDocument doc;
 
         // Flatten the object into an array for the frontend
@@ -91,10 +89,10 @@ void DovetailEditor::initEditorRoutes() {
         serializeJson(responseDoc, output);
         request->send(200, "application/json", output);
     });
-    server->on("/rename-device", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/rename-device", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("mac") && request->hasParam("name")) {
-            String mac = request->getParam("mac")->value();
-            String name = request->getParam("name")->value();
+            String mac = request->getParam("mac");
+            String name = request->getParam("name");
             Store::macToName[mac] = name;
             Store::nameToMac[name] = mac;
             Store::needsSave = true;
@@ -102,26 +100,26 @@ void DovetailEditor::initEditorRoutes() {
         }
     });
     // 1. DELETE FILE
-    server->on("/delete", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/delete", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("name")) {
-            String path = "/scripts/" + request->getParam("name")->value();
+            String path = "/scripts/" + request->getParam("name");
             if (SD.remove(path)) request->send(200, "text/plain", "Deleted");
             else request->send(500, "text/plain", "Delete Failed");
         }
     });
 
     // 2. RENAME FILE
-    server->on("/rename", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/rename", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("old") && request->hasParam("new")) {
-            String oldPath = "/scripts/" + request->getParam("old")->value();
-            String newPath = "/scripts/" + request->getParam("new")->value();
+            String oldPath = "/scripts/" + request->getParam("old");
+            String newPath = "/scripts/" + request->getParam("new");
             if (SD.rename(oldPath, newPath)) request->send(200, "text/plain", "Renamed");
             else request->send(500, "text/plain", "Rename Failed");
         }
     });
 
     // UPDATED LIST ROUTE (Only shows files in /scripts)
-    server->on("/list", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/list", HTTP_GET, [](AsyncWebServerRequest *request) {
         String json = "[";
         File root = SD.open("/scripts");
         File file = root.openNextFile();
@@ -137,10 +135,10 @@ void DovetailEditor::initEditorRoutes() {
         request->send(200, "application/json", json);
         root.close();
     });
-    server->on("/run", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/run", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("name") && request->hasParam("mac")) {
-            String filename = request->getParam("name")->value();
-            String deviceId = request->getParam("mac")->value(); // This is the MAC
+            String filename = request->getParam("name");
+            String deviceId = request->getParam("mac"); // This is the MAC
 
             // 1. Save locally so the Master knows what it last deployed
             Serial.println(
@@ -155,7 +153,7 @@ void DovetailEditor::initEditorRoutes() {
                 // Assuming sendMessage handles the IP routing
                 DovetailSystem::sendMessage(deviceId, "reset");
                 Store::macToCode[deviceId] = filename;
-                DovetailSystem::needsSave = true;
+                Store::needsSave = true;
                 request->send(200, "text/plain", "Deploying " + filename + " to " + deviceId);
             } else {
                 request->send(404, "text/plain", "Device not found or offline");

@@ -10,13 +10,14 @@
 #include <map>
 #include <SD.h>
 
+#include "WifiModule.h"
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
 #include "store/Store.h"
 
 String DovetailSystem::getCodeBaseForId(const String &id) {
-    const auto mac = nameToMac[id];
-    const auto codeBase = macToCode[mac];
+    const auto mac = Store::nameToMac[id];
+    const auto codeBase = Store::macToCode[mac];
     return codeBase;
 }
 
@@ -110,41 +111,42 @@ void DovetailSystem::connectionLoop() {
      * Hey buddy. U refactored and changed a lot of shit and forgot u did so. this is part of it. please remember that this used to be the logic that kicked users off the network when they joined.
      * You decided that you want to change that, and kick later.
      */
-    const auto ip = request->client()->remoteIP();
-    macToIp[mac] = request->client()->remoteIP();
-    Serial.println("Registered mac to ip");
-    if (!macToCode.count(mac)) {
-        auto device = HoistSystem::currentHoistInDeployment.devices[HoistSystem::deviceIndex];
-        macToCode[mac] = HoistSystem::inSetup ? device.file : "waterslide.ezra";
-        macToName[mac] = HoistSystem::inSetup ? device.deviceId : mac;
-        nameToMac[HoistSystem::inSetup ? device.deviceId : mac] = mac;
-        needsSave = true;
-        if (HoistSystem::status != 0) {
-            HoistSystem::status = 2;
-        }
-    }
-
-    if (HoistSystem::inSetup) {
-        Store::allowedMacs.insert(macStr);
-        Store::saveToMacList();
-        HoistSystem::status = 1;
-        updateDeviceCount();
-        break;
-    }
-
-    if (!connectMode) {
-        Serial.println("This client is not associated with this device!");
-        kickUserWithMac(TODO);
-        break;
-    }
+    // const auto ip = request->client()->remoteIP();
+    // macToIp[mac] = request->client()->remoteIP();
+    // Serial.println("Registered mac to ip");
+    // if (!macToCode.count(mac)) {
+    //     auto device = HoistSystem::currentHoistInDeployment.devices[HoistSystem::deviceIndex];
+    //     macToCode[mac] = HoistSystem::inSetup ? device.file : "waterslide.ezra";
+    //     macToName[mac] = HoistSystem::inSetup ? device.deviceId : mac;
+    //     nameToMac[HoistSystem::inSetup ? device.deviceId : mac] = mac;
+    //     needsSave = true;
+    //     if (HoistSystem::status != 0) {
+    //         HoistSystem::status = 2;
+    //     }
+    // }
+    //
+    // if (HoistSystem::inSetup) {
+    //     Store::allowedMacs.insert(macStr);
+    //     Store::saveToMacList();
+    //     HoistSystem::status = 1;
+    //     updateDeviceCount();
+    //     break;
+    // }
+    //
+    // if (!connectMode) {
+    //     Serial.println("This client is not associated with this device!");
+    //     kickUserWithMac(TODO);
+    //     break;
+    // }
 }
 
 void DovetailSystem::init() {
     defineRoutes();
+    WifiModule::startWifi();
 }
 
 void DovetailSystem::resetAllDevices() {
-    for (auto &name_to_mac: nameToMac) {
+    for (auto &name_to_mac: Store::nameToMac) {
         sendMessage(name_to_mac.second, "reset");
     }
 }

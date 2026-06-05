@@ -33,13 +33,13 @@ void Store::initSD() {
     Logger::log("Card initialized.");
 }
 
-QueueHandle_t sdQueue;
+QueueHandle_t Store::sdQueue;
 // Background Task for SD Writing
 void sdWorkerTask(void *pvParameters) {
     FileWritePacket packet{};
     for (;;) {
         // Wait indefinitely for a packet from the queue
-        if (xQueueReceive(sdQueue, &packet, portMAX_DELAY)) {
+        if (xQueueReceive(Store::sdQueue, &packet, portMAX_DELAY)) {
             File f = SD.open(packet.path, packet.isFirst ? FILE_WRITE : FILE_APPEND);
             if (f) {
                 f.write(packet.data, packet.len);
@@ -115,11 +115,11 @@ bool Store::isStandardFile(File &file) {
     return !(file.isDirectory() || String(file.name()).startsWith("._"));
 }
 
-String Store::hoistIDS = "";
+String Store::hoistEntriesForHoistSelection = "";
 
 void Store::registerHoistId(const String &id) {
-    if (hoistIDS != "") hoistIDS += "\n";
-    hoistIDS += id;
+    if (hoistEntriesForHoistSelection != "") hoistEntriesForHoistSelection += "\n";
+    hoistEntriesForHoistSelection += id;
 }
 
 ClientConfig Store::loadClientFromVariant(const JsonVariant &clientDocument) {
@@ -145,7 +145,7 @@ Hoist Store::loadHoistFromDocument(JsonDocument &hoistDocument) {
 }
 
 void Store::loadHoists() {
-    hoistIDS = "";
+    hoistEntriesForHoistSelection = "";
     auto hoistsDirectory = SD.open("/hoists");
 
 
@@ -214,6 +214,21 @@ void Store::loadRegistryFromSD() {
         nameToMac[name] = mac;
     }
     Logger::log("Loaded " + String(macToCode.size()) + " devices from SD.");
+}
+
+void Store::ensureDeleted(const String &name) {
+    if (SD.exists(name)) {
+        SD.remove(name);
+    }
+}
+
+void Store::resetRegistry() {
+    ensureDeleted("config.json");
+    macToCode.clear();
+    macToIp.clear();
+    macToName.clear();
+    nameToMac.clear();
+    loadRegistryFromSD();
 }
 
 void Store::saveRegistryToSD(File &file) {

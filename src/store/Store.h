@@ -16,8 +16,6 @@
 
 class Store {
 public:
-    static std::set<String> allowedMacs;
-    static String codebase[4];
 
     static std::vector<String> registeredMacsToVerify;
 
@@ -33,13 +31,15 @@ public:
 
     static void initSD();
 
+    static QueueHandle_t sdQueue;
+
     static bool ensureFileExists(const String &name);
 
     static bool getFileOrCreateDefault(const String &name, const std::function<bool(File &file)>& defaultValue);
 
     static bool isStandardFile(File &file);
 
-    static String hoistIDS;
+    static String hoistEntriesForHoistSelection;
 
     static void registerHoistId(const String &id);
 
@@ -50,6 +50,10 @@ public:
     static void loadHoists();
 
     static void loadRegistryFromSD();
+
+    static void ensureDeleted(const String &name);
+
+    static void resetRegistry();
 
     static void saveRegistryToSD(File &file);
 

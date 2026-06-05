@@ -9,15 +9,16 @@
 
 
 class WifiModule {
-    static String ssid;
-
     static void initWifiName();
 
     static void updateDeviceCount();
 
-    static void wifiEvent(arduino_event_id_t event, arduino_event_info_t info);
-
+public:
     static void resetWifi();
+
+    static void startWifi();
+
+    static String ssid;
 };
 
 
