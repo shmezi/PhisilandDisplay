@@ -15,6 +15,7 @@
 #include <map>
 #include <SD.h>
 #include "game/Game.h"
+#include "logging/Logger.h"
 #include "store/Store.h"
 
 
@@ -26,7 +27,11 @@ void DovetailEditor::initEditorRoutes() {
     server.on("/", HTTP_GET,  webpage);
     // server.serveStatic("/lib", SD, "/lib/");
 
-    server.on("/save", HTTP_POST, saveFile);
+    server.on("/save", HTTP_POST,
+       [](AsyncWebServerRequest *request){},  // request handler (empty)
+              nullptr,                                   // upload handler (none)
+       saveFile                            // body handler
+   );
     // Ensure this matches your JS call
     server.on("/read", HTTP_GET, readFile);
     server.on("/list-devices", HTTP_GET, listDevices);
@@ -106,7 +111,7 @@ void DovetailEditor::runFile(AsyncWebServerRequest *request) {
         String deviceId = request->getParam("mac")->value(); // This is the MAC
 
         // 1. Save locally so the Master knows what it last deployed
-        Serial.println(
+         Logger::log(
             "Running for device '" + deviceId + "' with " + String(Store::macToIp.count(deviceId)));
 
         // 2. Lookup the IP for this specific device
@@ -148,8 +153,39 @@ void DovetailEditor::readFile(AsyncWebServerRequest *request) {
     }
 }
 
-void DovetailEditor::saveFile(AsyncWebServerRequest *request) {
-    //REIMPlement
+void DovetailEditor::saveFile(AsyncWebServerRequest *request,
+                               uint8_t *data, size_t len,
+                               size_t index, size_t total) {
+    if (!request->hasParam("name")) {
+        request->send(400, "text/plain", "Missing name");
+        return;
+    }
+
+    String name    = request->getParam("name")->value();
+    String tmpPath = "/scripts/_tmp_" + name;
+    String path    = "/scripts/" + name;
+
+    // First chunk — create/overwrite the temp file
+    File f = SD.open(tmpPath, index == 0 ? FILE_WRITE : FILE_APPEND);
+    if (!f) {
+        request->send(500, "text/plain", "Failed to open temp file");
+        return;
+    }
+    f.write(data, len);
+    f.close();
+
+    // Only finalize once ALL chunks have arrived
+    if (index + len >= total) {
+        // Remove old file, rename temp into place
+        if (SD.exists(path)) SD.remove(path);
+
+        if (SD.rename(tmpPath, path)) {
+            request->send(200, "text/plain", "Saved");
+        } else {
+            SD.remove(tmpPath); // clean up
+            request->send(500, "text/plain", "Finalize failed");
+        }
+    }
 }
 
 void DovetailEditor::webpage(AsyncWebServerRequest *request) {

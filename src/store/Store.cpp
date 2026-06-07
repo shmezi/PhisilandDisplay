@@ -277,3 +277,18 @@ void Store::initValuesFromSD() {
 
     xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
 }
+
+void Store::cleanupTempFiles() {
+    File root = SD.open("/scripts");
+    File f = root.openNextFile();
+    while (f) {
+        auto name = String(f.name());
+        f.close();
+        if (name.startsWith("_tmp_")) {
+            SD.remove("/scripts/" + name);
+            Logger::log("Cleaned up: " + name);
+        }
+        f = root.openNextFile();
+    }
+    root.close();
+}

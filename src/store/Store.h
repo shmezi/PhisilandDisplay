@@ -64,6 +64,7 @@ public:
 
     static void initValuesFromSD();
 
+    static void cleanupTempFiles();
 };
 
 

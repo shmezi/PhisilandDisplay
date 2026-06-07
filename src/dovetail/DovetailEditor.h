@@ -16,7 +16,7 @@ public:
     static void renameDevice(AsyncWebServerRequest *request);
     static void deleteDevice(AsyncWebServerRequest *request);
     static void renameFile(AsyncWebServerRequest *request);
-    static void saveFile(AsyncWebServerRequest *request);
+    static void saveFile(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 
     static void listFiles(AsyncWebServerRequest *request);
     static void runFile(AsyncWebServerRequest *request);
