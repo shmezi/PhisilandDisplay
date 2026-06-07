@@ -61,7 +61,7 @@ void setup() {
     lv_label_set_text(ui_DeviceId, ("Connecting to: " + codeBaseName).c_str());
 
 
-    const auto ssid = "SSID: " + DovetailSystem::ssid;
+    const auto ssid = "SSID: " + WifiModule::ssid;
     lv_label_set_text(ui_SSID, ssid.c_str());
     HoistSystem::initHoists();
 

@@ -25,29 +25,29 @@ String Game::screen = "init"; //Init value is used for startup to allow splash s
 bool Game::shouldEndActivity = false;
 
 void Game::onResetButton(lv_event_t *e) {
-    DovetailSystem::sendMessageToClient("core", "reset");
+    // DovetailSystem::sendMessageToClient("core", "reset"); //TODO: ADD BACK!
 }
 
 //START / STOP BUTTON!
 void Game::onStartButton(lv_event_t *e) {
     shouldSwitchScreen = true;
     if (screen == "blackmamba") {
-        DovetailSystem::sendMessageToClient("core", "event?val=1");
+        // DovetailSystem::sendMessageToClient("core", "event?val=1"); //TODO: ADD BACK!
         return;
     }
     if (!(lv_obj_has_state(ui_StartStop4, LV_STATE_CHECKED) || lv_obj_has_state(ui_StartStop1, LV_STATE_CHECKED) ||
           lv_obj_has_state(ui_StartStop2, LV_STATE_CHECKED))) {
         Serial.print("~-1");
 
-        DovetailSystem::sendMessageToClient("core", "event?val=-1");
+        // DovetailSystem::sendMessageToClient("core", "event?val=-1"); //TODO: ADD BACK!
         return;
     }
 
-    if (screen == "swings")
-        DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl1)));
+    // if (screen == "swings")
+        // DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl1))); //TODO: ADD BACK!
 
-    if (screen == "ferriswheel")
-        DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl3)));
+    // if (screen == "ferriswheel")
+        // DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl3))); //TODO: ADD BACK!
 }
 
 bool Game::shouldSwitchScreen = false;
@@ -69,10 +69,10 @@ void Game::updateValues() {
 void Game::setCurrentScreen() {
     if (!shouldSwitchScreen) return;
 
-    if (HoistSystem::inSetup) {
-        Serial.println("Not switching screen due to deployment that is in process");
-        return;
-    }
+    // if (HoistSystem::inSetup) { TODO: Add back logic for deployment
+    //     Serial.println("Not switching screen due to deployment that is in process");
+    //     return;
+    // }
 
     shouldSwitchScreen = false;
     if (screen == "waterslide") {

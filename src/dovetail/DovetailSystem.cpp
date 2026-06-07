@@ -94,7 +94,7 @@ void DovetailSystem::defineRoutes() {
         }
 
 
-        const auto path = Store::getScriptFilePathByMac(request->getParam("mac"));
+        const auto path = Store::getScriptFilePathByMac(request->getParam("mac")->value());
 
         if (SD.exists(path)) {
             // Send the file. "text/plain" is usually best for code/scripts
@@ -147,7 +147,7 @@ void DovetailSystem::init() {
 
 void DovetailSystem::resetAllDevices() {
     for (auto &name_to_mac: Store::nameToMac) {
-        sendMessage(name_to_mac.second, "reset");
+        // sendMessage(name_to_mac.second, "reset");
     }
 }
 

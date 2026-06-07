@@ -36,7 +36,6 @@ enum HoistStatus {
 class HoistSystem {
 public:
     static std::map<String, Hoist> hoists;
-    static Hoist currentHoistInDeployment;
     static int deviceIndex;
 
     static void initHoists();
@@ -51,7 +50,6 @@ public:
 
     static void startDeploymentWithSelected();
 
-    static bool inSetup;
 };
 
 

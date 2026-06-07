@@ -5,7 +5,6 @@
 #include "HoistSystem.h"
 #include <SD.h>
 
-#include "ArduinoJson/Deserialization/DeserializationError.hpp"
 #include <ArduinoJson.h> //
 #include "lvgl.h"
 #include "lv_api_map_v8.h"
@@ -53,9 +52,9 @@ void HoistSystem::startDeploymentWithSelected() {
     Store::resetRegistry();
 
 
-    currentHoistInDeployment = hoists[selected];
+    // currentHoistInDeployment = hoists[selected];
 
     startDeployment();
     lv_disp_load_scr(ui_HoistSystem);
-    inSetup = true;
+    // inSetup = true;
 }

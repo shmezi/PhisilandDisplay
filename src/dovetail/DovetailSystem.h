@@ -4,7 +4,6 @@
 #ifndef PHISILANDDISPLAY_DOVETAILSYSTEM_H
 #define PHISILANDDISPLAY_DOVETAILSYSTEM_H
 #include <Arduino.h>
-#include <WebServer.h>
 #include <DNSServer.h>
 #include <map>
 
@@ -25,7 +24,6 @@ class DovetailSystem {
     static std::vector<String> registeredMacsToVerify;
 
 public:
-    static String ssid;
     static DNSServer dnsServer;
     static AsyncWebServer server;
 
@@ -41,10 +39,6 @@ public:
     static void resetAllDevices();
 
     static bool connectMode;
-
-    static void sendMessageToClient(const String &clientId, const String &message);
-
-    static void sendMessage(const String &device, const String &message);
 
 
     static void connection();

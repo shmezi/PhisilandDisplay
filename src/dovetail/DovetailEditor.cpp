@@ -19,7 +19,7 @@
 
 
 void DovetailEditor::initEditorRoutes() {
-    auto server = DovetailSystem::server;
+    auto& server = DovetailSystem::server;
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SD, "/index.html", "text/html");
     });
@@ -30,7 +30,7 @@ void DovetailEditor::initEditorRoutes() {
                }, nullptr, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
                    String fileName = "untitled.ezra";
                    if (request->hasParam("name", false)) {
-                       fileName = request->getParam("name", false);
+                       fileName = request->getParam("name", false)->value();
                    }
 
                    FileWritePacket packet{};
@@ -59,7 +59,7 @@ void DovetailEditor::initEditorRoutes() {
     // Ensure this matches your JS call
     server.on("/read", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("name")) {
-            String filename = request->getParam("name");
+            String filename = request->getParam("name")->value();
             String path = "/scripts/" + filename; // Must match the folder in /list
 
             if (SD.exists(path)) {
@@ -91,8 +91,8 @@ void DovetailEditor::initEditorRoutes() {
     });
     server.on("/rename-device", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("mac") && request->hasParam("name")) {
-            String mac = request->getParam("mac");
-            String name = request->getParam("name");
+            String mac = request->getParam("mac")->value();
+            String name = request->getParam("name")->value();
             Store::macToName[mac] = name;
             Store::nameToMac[name] = mac;
             Store::needsSave = true;
@@ -102,7 +102,7 @@ void DovetailEditor::initEditorRoutes() {
     // 1. DELETE FILE
     server.on("/delete", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("name")) {
-            String path = "/scripts/" + request->getParam("name");
+            String path = "/scripts/" + request->getParam("name")->value();
             if (SD.remove(path)) request->send(200, "text/plain", "Deleted");
             else request->send(500, "text/plain", "Delete Failed");
         }
@@ -111,8 +111,8 @@ void DovetailEditor::initEditorRoutes() {
     // 2. RENAME FILE
     server.on("/rename", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("old") && request->hasParam("new")) {
-            String oldPath = "/scripts/" + request->getParam("old");
-            String newPath = "/scripts/" + request->getParam("new");
+            String oldPath = "/scripts/" + request->getParam("old")->value();
+            String newPath = "/scripts/" + request->getParam("new")->value();
             if (SD.rename(oldPath, newPath)) request->send(200, "text/plain", "Renamed");
             else request->send(500, "text/plain", "Rename Failed");
         }
@@ -137,8 +137,8 @@ void DovetailEditor::initEditorRoutes() {
     });
     server.on("/run", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (request->hasParam("name") && request->hasParam("mac")) {
-            String filename = request->getParam("name");
-            String deviceId = request->getParam("mac"); // This is the MAC
+            String filename = request->getParam("name")->value();
+            String deviceId = request->getParam("mac")->value(); // This is the MAC
 
             // 1. Save locally so the Master knows what it last deployed
             Serial.println(
@@ -151,7 +151,7 @@ void DovetailEditor::initEditorRoutes() {
 
                 // 3. Send the message to the specific device
                 // Assuming sendMessage handles the IP routing
-                DovetailSystem::sendMessage(deviceId, "reset");
+                // DovetailSystem::sendMessage(deviceId, "reset"); TODO: RESET
                 Store::macToCode[deviceId] = filename;
                 Store::needsSave = true;
                 request->send(200, "text/plain", "Deploying " + filename + " to " + deviceId);
