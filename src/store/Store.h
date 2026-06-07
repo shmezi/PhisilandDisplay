@@ -60,6 +60,8 @@ public:
 
     static String getScriptFilePathByMac(const String&);
 
+    static String readFileToString(const String &name);
+
     static void initValuesFromSD();
 
 };

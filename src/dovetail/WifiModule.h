@@ -11,6 +11,7 @@
 class WifiModule {
     static void initWifiName();
 
+
     static void updateDeviceCount();
 
 public:

@@ -258,6 +258,16 @@ String Store::getScriptFilePathByMac(const String &mac) {
     return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "waterslide.ezra");
 }
 
+String Store::readFileToString(const String &name) {
+    if (File file = SD.open("/" + name, FILE_READ)) {
+        const auto fileContents = file.readString();
+        file.close();
+        return fileContents;
+    }
+    return "No Content Found!";
+}
+
+
 void Store::initValuesFromSD() {
     initSD();
     ensureFileExists("scripts");

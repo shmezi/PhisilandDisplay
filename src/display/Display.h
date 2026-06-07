@@ -17,8 +17,8 @@
 #define XPT2046_CS 33
 
 // Screen resolution:
-#define TFT_HORI_RES  320
-#define TFT_VERI_RES   240
+#define TFT_HORI_RES  240
+#define TFT_VERI_RES   320
 
 
 class Display {

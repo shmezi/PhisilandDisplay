@@ -64,13 +64,16 @@ String generateWifiName() {
     const auto noun = nouns[random(0, 14)];
     return String("Dovetail-") + verb + "-" + noun;
 }
-
+/*
+ * Ensure that a wifi name exists for this device.
+ */
 void WifiModule::initWifiName() {
     Store::getFileOrCreateDefault("wifi-name.txt", [](File &f) {
         f.print(generateWifiName());
         f.close();
         return true;
     });
+    ssid = Store::readFileToString("wifi-name.txt");
 }
 
 
@@ -83,6 +86,7 @@ void WifiModule::updateDeviceCount() {
 
 
 void WifiModule::startWifi() {
+    initWifiName();
     WiFi.softAP(ssid, password);
 
     WiFi.setSleep(false);
