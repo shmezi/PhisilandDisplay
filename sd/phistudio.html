@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dovetail</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{display:flex;height:100vh;font-family:'Segoe UI',sans-serif;background:#fff;color:#2c3e50;overflow:hidden}
+#sidebar{width:220px;min-width:220px;background:#f7f9fc;border-right:1px solid #edf2f7;display:flex;flex-direction:column;height:100vh}
+.sb-head{padding:14px 16px;font-size:11px;font-weight:700;color:#7f8c8d;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #edf2f7}
+#file-list{flex:1;padding:8px;overflow-y:auto}
+.fi{padding:7px 10px;cursor:pointer;border-radius:7px;font-size:13px;display:flex;align-items:center;color:#4a5568;margin-bottom:3px;position:relative}
+.fi:hover{background:#edf2f7}
+.fi.active{background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);color:#3182ce;font-weight:600}
+.fa{display:none;position:absolute;right:6px;gap:4px;align-items:center}
+.fi:hover .fa{display:flex}
+.ib{cursor:pointer;opacity:.55;padding:2px 5px;border-radius:4px;background:none;border:none;color:inherit;font-size:13px}
+.ib:hover{opacity:1;background:#fff;color:#3182ce}
+#main{flex:1;display:flex;flex-direction:column;height:100vh;min-width:0}
+.toolbar{height:48px;background:#fff;padding:0 16px;display:flex;gap:10px;border-bottom:1px solid #edf2f7;align-items:center;flex-shrink:0}
+.logo{font-weight:800;color:#3182ce;font-size:17px;margin-right:16px}
+.btn{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #edf2f7;color:#4a5568;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+.btn:hover{border-color:#3182ce;color:#3182ce}
+.btn.run{background:#e8f5e9;color:#2e7d32;border-color:#c8e6c9}
+.dev{display:flex;align-items:center;background:#f1f3f4;padding:3px 9px;border-radius:4px;border:1px solid #ddd;gap:4px}
+.dev select{background:none;border:none;font-size:12px;font-weight:500;color:#444;outline:none;cursor:pointer;font-family:inherit}
+#status{font-size:10px;padding:3px 9px;border-radius:10px;background:#f1f3f5;color:#6a737d;margin-left:auto;font-weight:700;text-transform:uppercase}
+.saving{background:#fff9db;color:#f59f00}
+.saved{background:#e6fffa;color:#38a169}
+#editor-wrap{flex:1;position:relative;overflow:hidden}
+#editor,#hl{position:absolute;top:0;left:0;width:100%;height:100%;font-family:'Fira Code',Consolas,monospace;font-size:14px;line-height:1.6;padding:12px 16px;white-space:pre;overflow:auto;tab-size:4;word-break:break-all}
+#editor{background:transparent;color:transparent;caret-color:#2d3748;border:none;outline:none;resize:none;z-index:2}
+#hl{pointer-events:none;z-index:1}
+.kw{color:#d53f8c;font-weight:700}
+.bi{color:#3182ce;font-weight:600}
+.vr{color:#dd6b20}
+.at{color:#805ad5;font-weight:600}
+.nm{color:#38a169}
+.st{color:#c05621}
+.cm{color:#a0aec0;font-style:italic}
+.er{background:rgba(255,0,0,.12);text-decoration:underline wavy #e53e3e}
+</style>
+
+<div id="sidebar">
+  <div class="sb-head">EXPLORER<button class="ib" onclick="newFile()" title="New file">＋</button></div>
+  <div id="file-list"></div>
+</div>
+
+<div id="main">
+  <div class="toolbar">
+    <div class="logo">Dovetail</div>
+    <div class="dev">
+      ⬡ <select id="dev-select" onchange="selectedMac=this.value"><option value="">No Devices</option></select>
+      <button class="ib" onclick="renameDevice()" title="Rename device">✎</button>
+    </div>
+    <button class="btn" onclick="saveFile()">💾 Save</button>
+    <button class="btn run" onclick="runCode()">▶ Run</button>
+    <div id="status">Ready</div>
+  </div>
+  <div id="editor-wrap">
+    <div id="hl" aria-hidden="true"></div>
+    <textarea id="editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+  </div>
+</div>
+
+<script>
+const KW=/\b(if|and|or|not|while|fn|return|when|once)\b/g;
+const BI=/\b(move|motor|rotate|reset|clear|write|read|analog|on)\b/g;
+const VR=/\b(gyro|angle|rotations|degrees|encoder|status|now)\b/g;
+const AT=/\b(print|sendResult|endActivity|after|true|false|yes|no)\b/g;
+const NM=/\b(\d+\.?\d*)\b/g;
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function highlight(code){
+  return code.split('\n').map(line=>{
+    let out='',pos=0;
+    while(pos<line.length){
+      if(line[pos]==='/'&&line[pos+1]==='/'){
+        out+='<span class=cm>'+esc(line.slice(pos))+'</span>';
+        break;
+      }
+      if(line[pos]==='"'){
+        let e=pos+1;
+        while(e<line.length&&line[e]!=='"')e++;
+        const ok=line[e]==='"';
+        out+='<span class="'+(ok?'st':'er')+'">'+esc(line.slice(pos,ok?e+1:line.length))+'</span>';
+        pos=ok?e+1:line.length;
+      } else {
+        let seg='';
+        while(pos<line.length&&line[pos]!=='"'&&!(line[pos]==='/'&&line[pos+1]==='/')){seg+=line[pos++];}
+        if(seg){
+          let s=esc(seg);
+          s=s.replace(KW,'<span class=kw>$1</span>');
+          s=s.replace(BI,'<span class=bi>$1</span>');
+          s=s.replace(VR,'<span class=vr>$1</span>');
+          s=s.replace(AT,'<span class=at>$1</span>');
+          s=s.replace(NM,'<span class=nm>$1</span>');
+          out+=s;
+        }
+      }
+    }
+    return out;
+  }).join('\n');
+}
+
+const ta=document.getElementById('editor');
+const hl=document.getElementById('hl');
+
+function syncHL(){hl.innerHTML=highlight(ta.value)+'\n';}
+function syncScroll(){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;}
+
+ta.addEventListener('input',()=>{syncHL();scheduleAS();setStatus('Modified','saving');});
+ta.addEventListener('scroll',syncScroll);
+ta.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const s=ta.selectionStart;
+    ta.value=ta.value.slice(0,s)+'    '+ta.value.slice(ta.selectionEnd);
+    ta.selectionStart=ta.selectionEnd=s+4;
+    syncHL();
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveFile();}
+});
+
+let activeFile='',selectedMac='',asTimer=null;
+
+function setStatus(t,c=''){const e=document.getElementById('status');e.textContent=t;e.className=c;}
+function scheduleAS(){clearTimeout(asTimer);asTimer=setTimeout(()=>saveFile(true),3000);}
+
+async function loadFileList(){
+  try{
+    const t=await(await fetch('/list')).json();
+    document.getElementById('file-list').innerHTML=t.map(f=>`
+<div class="fi ${f===activeFile?'active':''}" onclick="openFile('${f}')">
+<span style="margin-right:8px;opacity:.5">📄</span>
+<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f}</span>
+<div class="fa">
+<button class="ib" onclick="renameFile(event,'${f}')" title="Rename">✎</button>
+<button class="ib" onclick="deleteFile(event,'${f}')" title="Delete" style="color:#e53e3e">🗑</button>
+</div></div>`).join('');
+    return t;
+  }catch(e){return[];}
+}
+
+async function openFile(f){
+  if(activeFile&&activeFile!==f)await saveFile(true);
+  activeFile=f;
+  try{
+    ta.value=await(await fetch(`/read?name=${encodeURIComponent(f)}`)).text();
+    syncHL();syncScroll();setStatus('Editing: '+f);loadFileList();
+  }catch(e){console.error(e);}
+}
+
+async function saveFile(silent=false){
+  if(!activeFile)return;
+  if(!silent)setStatus('Saving...','saving');
+  try{
+    const ok=(await fetch(`/save?name=${encodeURIComponent(activeFile)}`,{
+      method:'POST',headers:{'Content-Type':'application/octet-stream'},
+      body:new Blob([ta.value],{type:'text/plain'})
+    })).ok;
+    if(ok){setStatus('Saved','saved');setTimeout(()=>{if(document.getElementById('status').textContent==='Saved')setStatus('Ready');},2000);}
+  }catch(e){setStatus('Offline');}
+}
+
+async function newFile(){
+  let f=prompt('Filename:');if(!f)return;
+  if(!f.endsWith('.ezra'))f+='.ezra';
+  activeFile=f;ta.value='// '+f+'\n';syncHL();
+  await saveFile();loadFileList();
+}
+
+async function renameFile(e,f){
+  e.stopPropagation();
+  const n=prompt('New name:',f);if(!n||n===f)return;
+  await fetch(`/rename?old=${encodeURIComponent(f)}&new=${encodeURIComponent(n)}`);
+  if(activeFile===f)activeFile=n;
+  loadFileList();
+}
+
+async function deleteFile(e,f){
+  e.stopPropagation();
+  if(!confirm('Delete '+f+'?'))return;
+  await fetch(`/delete?name=${encodeURIComponent(f)}`);
+  if(activeFile===f){activeFile='';ta.value='';syncHL();}
+  loadFileList();
+}
+
+async function refreshDevices(){
+  try{
+    const devs=await(await fetch('/list-devices')).json();
+    const sel=document.getElementById('dev-select');
+    if(!devs||!devs.length){sel.innerHTML='<option value="">No Devices</option>';return;}
+    sel.innerHTML=devs.map(d=>`<option value="${d.mac}"${d.mac===selectedMac?' selected':''}>${d.name||d.mac} (${d.mac})</option>`).join('');
+    if(!selectedMac&&devs.length)selectedMac=devs[0].mac;
+  }catch(e){}
+}
+
+async function renameDevice(){
+  if(!selectedMac){alert('Select a device first');return;}
+  const sel=document.getElementById('dev-select');
+  const cur=sel.options[sel.selectedIndex]?.text.split(' (')[0]||'';
+  const n=prompt('Nickname for '+selectedMac+':',cur);if(!n||n===cur)return;
+  try{
+    if((await fetch(`/rename-device?mac=${encodeURIComponent(selectedMac)}&name=${encodeURIComponent(n)}`)).ok){
+      setStatus('Device renamed','saved');refreshDevices();
+    }
+  }catch(e){}
+}
+
+function runCode(){
+  if(!activeFile){alert('Select a file');return;}
+  if(!selectedMac){alert('No device selected');return;}
+  fetch(`/run?name=${encodeURIComponent(activeFile)}&mac=${encodeURIComponent(selectedMac)}`);
+  setStatus('Sent to '+selectedMac,'saved');
+}
+
+window.onload=async()=>{
+  const files=await loadFileList();
+  if(files.length)openFile(files[0]);
+  refreshDevices();
+  setInterval(refreshDevices,5000);
+};
+</script>
+</html>

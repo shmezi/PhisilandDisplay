@@ -4,10 +4,26 @@
 
 #ifndef PHISILANDDISPLAY_DOVETAILEDITOR_H
 #define PHISILANDDISPLAY_DOVETAILEDITOR_H
+#include "ESPAsyncWebServer.h"
 
 
 class DovetailEditor {
+public:
     static void initEditorRoutes();
+
+    static void readFile(AsyncWebServerRequest *request);
+    static void listDevices(AsyncWebServerRequest *request);
+    static void renameDevice(AsyncWebServerRequest *request);
+    static void deleteDevice(AsyncWebServerRequest *request);
+    static void renameFile(AsyncWebServerRequest *request);
+    static void saveFile(AsyncWebServerRequest *request);
+
+    static void listFiles(AsyncWebServerRequest *request);
+    static void runFile(AsyncWebServerRequest *request);
+    static void webpage(AsyncWebServerRequest *request);
+
+
+
 };
 
 

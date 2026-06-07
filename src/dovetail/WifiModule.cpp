@@ -87,12 +87,12 @@ void WifiModule::updateDeviceCount() {
 
 void WifiModule::startWifi() {
     initWifiName();
-    WiFi.softAP(ssid, password);
+    WiFi.softAP(ssid, password,1,0,1);
 
     WiFi.setSleep(false);
     // WiFi.onEvent(wifiEvent);
 
-    DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
+    // DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
     DovetailSystem::server.begin();
 }
 

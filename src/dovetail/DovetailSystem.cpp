@@ -10,6 +10,7 @@
 #include <map>
 #include <SD.h>
 
+#include "DovetailEditor.h"
 #include "WifiModule.h"
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
@@ -24,9 +25,8 @@ String DovetailSystem::getCodeBaseForId(const String &id) {
 
 DNSServer DovetailSystem::dnsServer;
 
-
 AsyncWebServer DovetailSystem::server = {80};
-AsyncWebSocket ws("/ws");
+// AsyncWebSocket ws("/ws");
 
 bool DovetailSystem::connectMode = false;
 
@@ -59,7 +59,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
         data[len] = 0; // Null-terminate incoming character payload
         String message = reinterpret_cast<char *>(data);
 
-        ws.textAll("test");
+        // ws.textAll("test");
     }
 }
 
@@ -142,6 +142,7 @@ void DovetailSystem::connectionLoop() {
 
 void DovetailSystem::init() {
     defineRoutes();
+    DovetailEditor::initEditorRoutes();
     WifiModule::startWifi();
 }
 
