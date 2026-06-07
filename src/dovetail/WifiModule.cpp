@@ -64,6 +64,7 @@ String generateWifiName() {
     const auto noun = nouns[random(0, 14)];
     return String("Dovetail-") + verb + "-" + noun;
 }
+
 /*
  * Ensure that a wifi name exists for this device.
  */
@@ -84,15 +85,19 @@ void WifiModule::updateDeviceCount() {
     lv_label_set_text(ui_ConnectedLabel, updatedConnectedClientsLabel.c_str());
 }
 
-
 void WifiModule::startWifi() {
     initWifiName();
-    WiFi.softAP(ssid, password,1,0,1);
+    WiFi.softAP(ssid, password, 1, 0, 1);
+    IPAddress apIP = WiFi.softAPIP();
+    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
 
     WiFi.setSleep(false);
     // WiFi.onEvent(wifiEvent);
 
-    // DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
+    DovetailSystem::dnsServer.setTTL(300);
+    DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
+
+
     DovetailSystem::server.begin();
 }
 

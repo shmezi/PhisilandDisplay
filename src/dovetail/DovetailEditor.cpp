@@ -18,20 +18,20 @@
 #include "logging/Logger.h"
 #include "store/Store.h"
 
-
 void DovetailEditor::initEditorRoutes() {
     auto &server = DovetailSystem::server;
     server.on("/debug", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(200, "text/html", "WebServer Is Functional!");
     });
-    server.on("/", HTTP_GET,  webpage);
+    server.on("/", HTTP_GET, webpage);
     // server.serveStatic("/lib", SD, "/lib/");
 
     server.on("/save", HTTP_POST,
-       [](AsyncWebServerRequest *request){},  // request handler (empty)
-              nullptr,                                   // upload handler (none)
-       saveFile                            // body handler
-   );
+              [](AsyncWebServerRequest *request) {
+              }, // request handler (empty)
+              nullptr, // upload handler (none)
+              saveFile // body handler
+    );
     // Ensure this matches your JS call
     server.on("/read", HTTP_GET, readFile);
     server.on("/list-devices", HTTP_GET, listDevices);
@@ -102,7 +102,6 @@ void DovetailEditor::listFiles(AsyncWebServerRequest *request) {
     root.close();
     json += "]";
     request->send(200, "application/json", json);
-
 }
 
 void DovetailEditor::runFile(AsyncWebServerRequest *request) {
@@ -111,7 +110,7 @@ void DovetailEditor::runFile(AsyncWebServerRequest *request) {
         String deviceId = request->getParam("mac")->value(); // This is the MAC
 
         // 1. Save locally so the Master knows what it last deployed
-         Logger::log(
+        Logger::log(
             "Running for device '" + deviceId + "' with " + String(Store::macToIp.count(deviceId)));
 
         // 2. Lookup the IP for this specific device
@@ -154,16 +153,16 @@ void DovetailEditor::readFile(AsyncWebServerRequest *request) {
 }
 
 void DovetailEditor::saveFile(AsyncWebServerRequest *request,
-                               uint8_t *data, size_t len,
-                               size_t index, size_t total) {
+                              uint8_t *data, size_t len,
+                              size_t index, size_t total) {
     if (!request->hasParam("name")) {
         request->send(400, "text/plain", "Missing name");
         return;
     }
 
-    String name    = request->getParam("name")->value();
+    String name = request->getParam("name")->value();
     String tmpPath = "/scripts/_tmp_" + name;
-    String path    = "/scripts/" + name;
+    String path = "/scripts/" + name;
 
     // First chunk — create/overwrite the temp file
     File f = SD.open(tmpPath, index == 0 ? FILE_WRITE : FILE_APPEND);
@@ -188,8 +187,9 @@ void DovetailEditor::saveFile(AsyncWebServerRequest *request,
     }
 }
 
+
 void DovetailEditor::webpage(AsyncWebServerRequest *request) {
-    request->send(SD, "/phistudio.html", "text/html");
-
-
+    auto response = request->beginResponse(SD, "/phistudio.html.gz", "text/html", false);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
 }

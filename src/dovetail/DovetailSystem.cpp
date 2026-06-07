@@ -23,7 +23,7 @@ String DovetailSystem::getCodeBaseForId(const String &id) {
 }
 
 
-DNSServer DovetailSystem::dnsServer;
+AsyncDNSServer DovetailSystem::dnsServer;
 
 AsyncWebServer DovetailSystem::server = {80};
 // AsyncWebSocket ws("/ws");

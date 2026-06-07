@@ -8,6 +8,7 @@
 #include <map>
 
 #include "ESPAsyncWebServer.h"
+#include "libs/asyncdns/ESPAsyncDNSServer.h"
 
 struct FileWritePacket {
     char path[64];
@@ -24,7 +25,7 @@ class DovetailSystem {
     static std::vector<String> registeredMacsToVerify;
 
 public:
-    static DNSServer dnsServer;
+    static AsyncDNSServer dnsServer;
     static AsyncWebServer server;
 
     static String getCodeBaseForId(const String &id);

@@ -73,7 +73,6 @@ char receivedChars[64]; // Buffer to store the received data
 
 void loop() {
     Display::lvglTask();
-    // DovetailSystem::dnsServer.processNextRequest();
     Game::setCurrentScreen();
     Game::updateValues();
     HoistSystem::hoistLoop();
