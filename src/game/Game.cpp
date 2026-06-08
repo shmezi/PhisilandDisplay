@@ -16,6 +16,7 @@
 #include "lv_api_map_v8.h"
 #include "dovetail/DovetailSystem.h"
 #include "hoist/HoistSystem.h"
+#include "logging/Logger.h"
 
 #include "ui_output/ui_BlackMamba.h"
 #include "widgets/arc/lv_arc.h"
@@ -95,7 +96,7 @@ void Game::setCurrentScreen() {
         lv_disp_load_scr(ui_SplashScreen);
         return;
     }
-    Serial.println("Unknown screen id'" + screen + "'!");
+    Logger::error("Unknown screen id'" + screen + "'!");
 }
 
 

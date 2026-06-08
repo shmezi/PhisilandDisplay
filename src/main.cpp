@@ -65,7 +65,7 @@ void setup() {
     lv_label_set_text(ui_SSID, ssid.c_str());
     HoistSystem::initHoists();
 
-    Serial.println("Setup done");
+    Logger::log("Setup done");
 }
 
 
