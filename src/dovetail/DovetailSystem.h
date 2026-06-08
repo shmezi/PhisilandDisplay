@@ -30,6 +30,8 @@ public:
 
     static String getCodeBaseForId(const String &id);
 
+    static AsyncWebSocket ws;
+
 
     static void code(AsyncWebServerRequest *request);
 

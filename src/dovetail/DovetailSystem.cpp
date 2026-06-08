@@ -26,7 +26,7 @@ String DovetailSystem::getCodeBaseForId(const String &id) {
 AsyncDNSServer DovetailSystem::dnsServer;
 
 AsyncWebServer DovetailSystem::server = {80};
-AsyncWebSocket ws("/ws");
+AsyncWebSocket DovetailSystem::ws("/ws");
 
 
 bool DovetailSystem::connectMode = false;
@@ -34,7 +34,7 @@ bool DovetailSystem::connectMode = false;
 
 void onWebSocketMessage(const AwsFrameInfo *info, String message, size_t len) {
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        ws.textAll("test");
+        DovetailSystem::ws.textAll("test");
     }
 }
 

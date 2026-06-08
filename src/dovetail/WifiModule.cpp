@@ -87,7 +87,7 @@ void WifiModule::updateDeviceCount() {
 
 void WifiModule::ipToMac(IPAddress &ip, uint8_t *macOut) {
     uint8_t mac[6];
-    WiFiClass::hostByName(ip.toString().c_str(), ip);
+    WiFiClass:: hostByName(ip.toString().c_str(), ip);
     macOut = mac;
 }
 
