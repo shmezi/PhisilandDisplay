@@ -18,6 +18,12 @@ public:
 
     static void updateDeviceCount();
 
+    static void ipToMac(IPAddress &ip, uint8_t *macOut);
+
+    static void kickUserByMac(uint8_t *mac[]);
+
+    static void kickUserByIp(IPAddress &ip);
+
     static String ssid;
 };
 

@@ -28,46 +28,24 @@ AsyncDNSServer DovetailSystem::dnsServer;
 AsyncWebServer DovetailSystem::server = {80};
 AsyncWebSocket ws("/ws");
 
+
 bool DovetailSystem::connectMode = false;
 
-void DovetailSystem::kickUserWithMac(const String &macToEvict) {
-    wifi_sta_list_t connectedClients;
-    esp_wifi_ap_get_sta_list(&connectedClients);
 
-    for (int i = 0; i < connectedClients.num; i++) {
-        wifi_sta_info_t client = connectedClients.sta[i];
-
-        char currentClientMac[18];
-
-        sprintf(currentClientMac, "%02X:%02X:%02X:%02X:%02X:%02X",
-                client.mac[0], client.mac[1], client.mac[2],
-                client.mac[3], client.mac[4], client.mac[5]);
-
-        uint16_t aidOfClientToKick = 0;
-        if (macToEvict.equalsIgnoreCase(currentClientMac)) {
-            esp_wifi_ap_get_sta_aid(client.mac, &aidOfClientToKick);
-            esp_wifi_deauth_sta(aidOfClientToKick);
-            Serial.printf("🛡️ Sweeper Task: Kicked intruder %s\n", currentClientMac);
-            break;
-        }
-    }
-}
-
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-    auto *info = static_cast<AwsFrameInfo *>(arg);
+void onWebSocketMessage(const AwsFrameInfo *info, String message, size_t len) {
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        data[len] = 0; // Null-terminate incoming character payload
-        String message = reinterpret_cast<char *>(data);
-
-        // ws.textAll("test");
+        ws.textAll("test");
     }
 }
 
 
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
-             void *arg, uint8_t *data, size_t len) {
+void onWebSocketEvent(
+    AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+    void *arg, uint8_t *data, size_t len) {
     switch (type) {
         case WS_EVT_CONNECT:
+
+
             Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
                           client->remoteIP().toString().c_str());
             client->text("Welcome Client!");
@@ -76,7 +54,8 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
             Serial.printf("WebSocket client #%u disconnected\n", client->id());
             break;
         case WS_EVT_DATA:
-            handleWebSocketMessage(arg, data, len);
+            data[len] = 0; // Null-terminate incoming character payload
+            onWebSocketMessage(static_cast<AwsFrameInfo *>(arg), reinterpret_cast<char *>(data), len);
             break;
         case WS_EVT_PONG:
         case WS_EVT_ERROR:
@@ -84,26 +63,26 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     }
 }
 
+void DovetailSystem::code(AsyncWebServerRequest *request) {
+    if (!request->hasParam("mac")) {
+        request->send(500, "text/plain", "Mac address not provided!");
+        return;
+    }
+
+
+    const auto path = Store::getScriptFilePathByMac(request->getParam("mac")->value());
+
+    if (SD.exists(path)) {
+        // Send the file. "text/plain" is usually best for code/scripts
+        request->send(SD, path, "text/plain");
+    } else {
+        // Fallback if the file hasn't been created yet
+        request->send(404, "text/plain", "File not found on SD card!");
+    }
+}
 
 void DovetailSystem::defineRoutes() {
-    server.on("/code", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (!request->hasParam("mac")) {
-            request->send(500, "text/plain", "Mac address not provided!");
-
-            return;
-        }
-
-
-        const auto path = Store::getScriptFilePathByMac(request->getParam("mac")->value());
-
-        if (SD.exists(path)) {
-            // Send the file. "text/plain" is usually best for code/scripts
-            request->send(SD, path, "text/plain");
-        } else {
-            // Fallback if the file hasn't been created yet
-            request->send(404, "text/plain", "File not found on SD card!");
-        }
-    });
+    server.on("/code", HTTP_GET, code);
 }
 
 void DovetailSystem::connectionLoop() {

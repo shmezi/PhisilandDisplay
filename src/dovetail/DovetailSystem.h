@@ -19,7 +19,7 @@ struct FileWritePacket {
 
 
 class DovetailSystem {
-    static void kickUserWithMac(const String &macToEvict);
+
 
 
     static std::vector<String> registeredMacsToVerify;
@@ -30,6 +30,8 @@ public:
 
     static String getCodeBaseForId(const String &id);
 
+
+    static void code(AsyncWebServerRequest *request);
 
     static void defineRoutes();
 
