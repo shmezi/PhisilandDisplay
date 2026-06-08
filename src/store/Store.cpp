@@ -158,6 +158,7 @@ void Store::loadHoists() {
 
         JsonDocument hoistDocument;
         DeserializationError error = deserializeJson(hoistDocument, hoistFile);
+        hoistFile.close();
         if (error) {
             Logger::error("Error reading hoist file: '" + String(hoistFile.name()) + "'!");
             continue;
