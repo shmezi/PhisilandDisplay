@@ -11,13 +11,12 @@
 class WifiModule {
     static void initWifiName();
 
-
-    static void updateDeviceCount();
-
 public:
     static void resetWifi();
 
     static void startWifi();
+
+    static void updateDeviceCount();
 
     static String ssid;
 };

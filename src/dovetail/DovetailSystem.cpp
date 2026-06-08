@@ -26,7 +26,7 @@ String DovetailSystem::getCodeBaseForId(const String &id) {
 AsyncDNSServer DovetailSystem::dnsServer;
 
 AsyncWebServer DovetailSystem::server = {80};
-// AsyncWebSocket ws("/ws");
+AsyncWebSocket ws("/ws");
 
 bool DovetailSystem::connectMode = false;
 

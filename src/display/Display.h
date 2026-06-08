@@ -60,6 +60,8 @@ class Display {
 public:
     static void lvglTask();
 
+    static void applyScreenCompatibility(lv_display_t *display);
+
     static void innit();
 };
 

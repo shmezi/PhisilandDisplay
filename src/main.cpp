@@ -76,6 +76,7 @@ void loop() {
     Game::setCurrentScreen();
     Game::updateValues();
     HoistSystem::hoistLoop();
+    WifiModule::updateDeviceCount();
     if (Game::shouldEndActivity) {
         Game::endRound();
         Game::shouldEndActivity = false;

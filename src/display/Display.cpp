@@ -15,6 +15,8 @@
 #include "ui_output/ui.h"
 #include <XPT2046_Bitbang.h>
 
+#include "logging/Logger.h"
+
 
 lv_indev_t *Display::indev;
 lv_color_t *Display::draw_buf;
@@ -33,16 +35,12 @@ uint16_t Display::touchScreenMinimumY = 20;
 uint16_t Display::touchScreenMaximumY = 220;
 
 
-auto tft = TFT_eSPI(); // Manually define the object
+auto tft = TFT_eSPI();
 
 bool Display::detectInversionRequirement() {
     esp_chip_info_t chip_info;
-    esp_chip_info(&chip_info);
 
-    Serial.println("Data: ");
-    Serial.println(chip_info.model);
-    Serial.println(chip_info.revision);
-    Serial.println(chip_info.full_revision);
+    esp_chip_info(&chip_info);
 
     return chip_info.revision == 1;
 }
@@ -93,48 +91,47 @@ void Display::lvglTask() {
     lv_timer_handler();
 }
 
+void Display::applyScreenCompatibility(lv_display_t *display) {
+    if (detectInversionRequirement()) {
+        Logger::log("Screen type A");
+        tft.setRotation(2);
+
+        tft.invertDisplay(false);
+        lv_display_set_rotation(display, LV_DISPLAY_ROTATION_180);
+    } else {
+        Logger::log("Screen type B");
+        tft.setRotation(3); // or whatever works for XH-32S
+        lv_display_set_rotation(display, LV_DISPLAY_ROTATION_90);
+    }
+}
+
 void Display::innit() {
-    String LVGL_Arduino = "LVGL demo ";
+    const auto lvglStartupMessage =
+            String("LVGL V: ")
+            + lv_version_major() + "."
+            + lv_version_minor() + "." +
+            lv_version_patch();
 
-    LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
+    Logger::log(lvglStartupMessage);
 
-    Serial.println(LVGL_Arduino);
     Serial.setTimeout(20); // short timeout for safety
 
-    // pinMode(21, OUTPUT);
-    // digitalWrite(21, HIGH);
-    // //Initialise the touchscreen
-    //
-    // /* Start second SPI bus for touchscreen */
-    touchscreen.begin(); /* Touchscreen init */
-    // touchscreen.setCalibration(); /* Inverted landscape orientation to match screen */
+    touchscreen.begin();
 
-    //Initialise LVGL
     lv_init();
-    draw_buf = static_cast<lv_color_t *>(heap_caps_malloc(320 * 24 * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-    lv_display_t *disp;
+    draw_buf = static_cast<lv_color_t *>(heap_caps_malloc(320 * 24 * sizeof(lv_color_t),
+                                                          MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     tft.begin();
 
 
     tft.fillScreen(TFT_BLACK); // Clear the garbled memory
 
-    disp = lv_tft_espi_create(TFT_HORI_RES, TFT_VERI_RES, draw_buf, DRAW_BUF_SIZE);
+    lv_display_t *disp = lv_tft_espi_create(TFT_HORI_RES, TFT_VERI_RES, draw_buf, DRAW_BUF_SIZE);
 
     delay(1000);
     tft.setSwapBytes(false);
-    if (detectInversionRequirement()) {
-        Serial.println("Screen type A");
-        tft.setRotation(2);
-
-        tft.invertDisplay(false);
-        lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_180);
-
-    } else {
-        Serial.println("Screen type B");
-        tft.setRotation(3); // or whatever works for XH-32S
-        lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
-    }
+    applyScreenCompatibility(disp);
 
 
     //Initialize the XPT2046 input device driver

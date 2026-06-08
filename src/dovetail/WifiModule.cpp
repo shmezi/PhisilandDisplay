@@ -85,9 +85,10 @@ void WifiModule::updateDeviceCount() {
     lv_label_set_text(ui_ConnectedLabel, updatedConnectedClientsLabel.c_str());
 }
 
+
 void WifiModule::startWifi() {
     initWifiName();
-    WiFi.softAP(ssid, password, 1, 0, 1);
+    WiFi.softAP(ssid, password, 1, 0, 5);
     IPAddress apIP = WiFi.softAPIP();
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
 
@@ -96,7 +97,6 @@ void WifiModule::startWifi() {
 
     DovetailSystem::dnsServer.setTTL(300);
     DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
-
 
     DovetailSystem::server.begin();
 }
