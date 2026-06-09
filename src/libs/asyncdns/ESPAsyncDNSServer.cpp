@@ -40,8 +40,7 @@ namespace {
         domainName.replace("www.", "");
     }
 
-    String
-    getDomainNameWithoutWwwPrefix(unsigned char *start) {
+    String getDomainNameWithoutWwwPrefix(const unsigned char *start) {
         String parsedDomainName = "";
         if (start == nullptr || *start == 0)
             return parsedDomainName;
@@ -85,7 +84,6 @@ AsyncDNSServer::start(const uint16_t port, const String &domainName,
             [&](AsyncUDPPacket &packet) {
                 this->processRequest(packet);
                 vTaskDelay(pdMS_TO_TICKS(10));
-
             }
         );
         return true;

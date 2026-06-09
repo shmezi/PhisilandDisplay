@@ -32,7 +32,7 @@ AsyncWebSocket DovetailSystem::ws("/ws");
 bool DovetailSystem::connectMode = false;
 
 
-void onWebSocketMessage(const AwsFrameInfo *info, String message, size_t len) {
+void onWebSocketMessage(const AwsFrameInfo *info, const String& message, size_t len) {
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
         DovetailSystem::ws.textAll("test");
     }
@@ -86,41 +86,12 @@ void DovetailSystem::defineRoutes() {
 }
 
 void DovetailSystem::connectionLoop() {
-    /**
-     * Hey buddy. U refactored and changed a lot of shit and forgot u did so. this is part of it. please remember that this used to be the logic that kicked users off the network when they joined.
-     * You decided that you want to change that, and kick later.
-     */
-    // const auto ip = request->client()->remoteIP();
-    // macToIp[mac] = request->client()->remoteIP();
-    // Serial.println("Registered mac to ip");
-    // if (!macToCode.count(mac)) {
-    //     auto device = HoistSystem::currentHoistInDeployment.devices[HoistSystem::deviceIndex];
-    //     macToCode[mac] = HoistSystem::inSetup ? device.file : "waterslide.ezra";
-    //     macToName[mac] = HoistSystem::inSetup ? device.deviceId : mac;
-    //     nameToMac[HoistSystem::inSetup ? device.deviceId : mac] = mac;
-    //     needsSave = true;
-    //     if (HoistSystem::status != 0) {
-    //         HoistSystem::status = 2;
-    //     }
-    // }
-    //
-    // if (HoistSystem::inSetup) {
-    //     Store::allowedMacs.insert(macStr);
-    //     Store::saveToMacList();
-    //     HoistSystem::status = 1;
-    //     updateDeviceCount();
-    //     break;
-    // }
-    //
-    // if (!connectMode) {
-    //     Serial.println("This client is not associated with this device!");
-    //     kickUserWithMac(TODO);
-    //     break;
-    // }
 }
 
 void DovetailSystem::init() {
     defineRoutes();
+    ws.onEvent(onWebSocketEvent);
+
     DovetailEditor::initEditorRoutes();
     WifiModule::startWifi();
 }

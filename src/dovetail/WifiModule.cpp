@@ -87,7 +87,7 @@ void WifiModule::updateDeviceCount() {
 
 void WifiModule::ipToMac(IPAddress &ip, uint8_t *macOut) {
     uint8_t mac[6];
-    WiFiClass:: hostByName(ip.toString().c_str(), ip);
+    WiFiClass::hostByName(ip.toString().c_str(), ip);
     macOut = mac;
 }
 
@@ -120,11 +120,12 @@ void WifiModule::startWifi() {
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
 
     WiFi.setSleep(false);
+
     // WiFi.onEvent(wifiEvent);
 
     DovetailSystem::dnsServer.setTTL(300);
     DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
-
+    DovetailSystem::server.addHandler(&DovetailSystem::ws);
     DovetailSystem::server.begin();
 }
 
