@@ -123,10 +123,25 @@ void WifiModule::startWifi() {
 
     // WiFi.onEvent(wifiEvent);
 
+
     DovetailSystem::dnsServer.setTTL(300);
     DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
     DovetailSystem::server.addHandler(&DovetailSystem::ws);
     DovetailSystem::server.begin();
+}
+
+std::string WifiModule::macToString(const std::array<uint8_t, 6> &mac) {
+    char buf[18];
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return buf;
+}
+
+std::array<uint8_t, 6> WifiModule::parsePrettyMac(const String &macStr) {
+    std::array<uint8_t, 6> mac;
+    sscanf(macStr.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+           &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
+    return mac;
 }
 
 void WifiModule::resetWifi() {

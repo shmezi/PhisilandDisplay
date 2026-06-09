@@ -9,21 +9,23 @@
 #include <set>
 
 #include "dovetail/DovetailSystem.h"
+#include "dovetail/WifiModule.h"
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
 #include "widgets/roller/lv_roller.h"
 
 
 struct ClientConfig;
-std::map<String, IPAddress> Store::macToIp;
+std::map<std::array<uint8_t, 6>, IPAddress> Store::macToIp;
 
-std::map<String, String> Store::macToName;
+std::map<std::array<uint8_t, 6>, String> Store::macToName;
+std::vector<std::array<uint8_t, 6> > Store::registeredMacsToVerify;
+std::map<String, std::array<uint8_t, 6> > Store::nameToMac;
 
-std::map<String, String> Store::nameToMac;
 
-
-std::map<String, String> Store::macToCode;
-
+std::map<std::array<uint8_t, 6>, String> Store::macToCode;
+//Hey future confused me, Ezra from 9/06, I haven't checked but I think this needs save is regarding the config file.
+//If it's wrong, just change it's name.. Ezra from the past really should have named stuff better aye?
 bool Store::needsSave = false;
 
 
@@ -203,7 +205,9 @@ void Store::loadRegistryFromSD() {
 
     JsonObject root = doc.as<JsonObject>();
     for (JsonPair p: root) {
-        String mac = p.key().c_str();
+        String formattedMac = p.key().c_str();
+
+        auto mac = WifiModule::parsePrettyMac(formattedMac);
         JsonObject data = p.value();
 
         macToCode[mac] = data["code"] | "default.ezra";
@@ -237,13 +241,15 @@ void Store::saveRegistryToSD(File &file) {
     JsonDocument doc;
 
     for (auto const &[mac, code]: macToCode) {
-        doc[mac]["code"] = code;
+        auto formattedMac = WifiModule::macToString(mac);
+
+        doc[formattedMac]["code"] = code;
 
         // Check if this MAC also has a nickname in nameToMac
         // We iterate through nameToMac to find the matching MAC
         for (auto const &[m, name]: macToName) {
             if (m == mac) {
-                doc[mac]["name"] = name;
+                doc[formattedMac]["name"] = name;
                 break;
             }
         }
@@ -253,7 +259,7 @@ void Store::saveRegistryToSD(File &file) {
     needsSave = false;
 }
 
-String Store::getScriptFilePathByMac(const String &mac) {
+String Store::getScriptFilePathByMac(const std::array<uint8_t, 6> &mac) {
     auto assignedScriptToMac = macToCode.find(mac);
     auto macHasAssignedCodebase = assignedScriptToMac != macToCode.end();
     return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "waterslide.ezra");

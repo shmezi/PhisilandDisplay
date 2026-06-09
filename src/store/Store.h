@@ -17,16 +17,15 @@
 
 class Store {
 public:
+    static std::vector<std::array<uint8_t, 6> > registeredMacsToVerify;
 
-    static std::vector<String> registeredMacsToVerify;
+    static std::map<std::array<uint8_t, 6>, IPAddress> macToIp;
 
-    static std::map<String, IPAddress> macToIp;
+    static std::map<std::array<uint8_t, 6>, String> macToName;
 
-    static std::map<String, String> macToName;
+    static std::map<String, std::array<uint8_t, 6> > nameToMac;
 
-    static std::map<String, String> nameToMac;
-
-    static std::map<String, String> macToCode;
+    static std::map<std::array<uint8_t, 6>, String> macToCode;
 
     static bool needsSave;
 
@@ -36,7 +35,7 @@ public:
 
     static bool ensureFileExists(const String &name);
 
-    static bool getFileOrCreateDefault(const String &name, const std::function<bool(File &file)>& defaultValue);
+    static bool getFileOrCreateDefault(const String &name, const std::function<bool(File &file)> &defaultValue);
 
     static bool isStandardFile(File &file);
 
@@ -58,7 +57,7 @@ public:
 
     static void saveRegistryToSD(File &file);
 
-    static String getScriptFilePathByMac(const String&);
+    static String getScriptFilePathByMac(const std::array<uint8_t, 6> &mac);
 
     static String readFileToString(const String &name);
 

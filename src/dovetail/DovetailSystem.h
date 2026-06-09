@@ -37,7 +37,7 @@ public:
 
     static void defineRoutes();
 
-    static void connectionLoop();
+    static void macVerificationLoop();
 
     static void init();
 

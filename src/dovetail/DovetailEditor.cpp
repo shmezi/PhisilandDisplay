@@ -14,6 +14,8 @@
 
 #include <map>
 #include <SD.h>
+
+#include "WifiModule.h"
 #include "game/Game.h"
 #include "logging/Logger.h"
 #include "store/Store.h"
@@ -58,7 +60,7 @@ void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
         auto &mac = v.first;
         auto &ip = v.second;
         JsonObject device = array.add<JsonObject>();
-        device["mac"] = mac;
+        device["mac"] = WifiModule::macToString(mac);
         device["ip"] = ip;
         device["name"] = Store::macToName[mac]; // Use MAC as name if empty
     }
@@ -70,7 +72,7 @@ void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
 
 void DovetailEditor::renameDevice(AsyncWebServerRequest *request) {
     if (request->hasParam("mac") && request->hasParam("name")) {
-        String mac = request->getParam("mac")->value();
+        std::array<uint8_t, 6> mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
         String name = request->getParam("name")->value();
         Store::macToName[mac] = name;
         Store::nameToMac[name] = mac;
@@ -107,23 +109,25 @@ void DovetailEditor::listFiles(AsyncWebServerRequest *request) {
 void DovetailEditor::runFile(AsyncWebServerRequest *request) {
     if (request->hasParam("name") && request->hasParam("mac")) {
         String filename = request->getParam("name")->value();
-        String deviceId = request->getParam("mac")->value(); // This is the MAC
+        const auto formattedMac = request->getParam("mac")->value();
+        std::array<uint8_t, 6> deviceMac = WifiModule::parsePrettyMac(formattedMac);
+        // This is the MAC
 
         // 1. Save locally so the Master knows what it last deployed
         Logger::log(
-            "Running for device '" + deviceId + "' with " + String(Store::macToIp.count(deviceId)));
+            "Running for device '" + formattedMac + "' with " + String(Store::macToIp.count(deviceMac)));
 
         // 2. Lookup the IP for this specific device
         // If you are using a std::map<String, IPAddress> macToIp:
-        if (Store::macToIp.count(deviceId)) {
+        if (Store::macToIp.count(deviceMac)) {
             // IPAddress targetIP = macToIp[deviceId];
 
             // 3. Send the message to the specific device
             // Assuming sendMessage handles the IP routing
             // DovetailSystem::sendMessage(deviceId, "reset"); TODO: RESET
-            Store::macToCode[deviceId] = filename;
+            Store::macToCode[deviceMac] = filename;
             Store::needsSave = true;
-            request->send(200, "text/plain", "Deploying " + filename + " to " + deviceId);
+            request->send(200, "text/plain", "Deploying " + filename + " to " + formattedMac);
         } else {
             request->send(404, "text/plain", "Device not found or offline");
         }

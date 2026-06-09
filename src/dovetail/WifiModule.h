@@ -16,6 +16,10 @@ public:
 
     static void startWifi();
 
+    static std::string macToString(const std::array<uint8_t, 6> &mac);
+
+    static std::array<uint8_t, 6> parsePrettyMac(const String &macStr);
+
     static void updateDeviceCount();
 
     static void ipToMac(IPAddress &ip, uint8_t *macOut);

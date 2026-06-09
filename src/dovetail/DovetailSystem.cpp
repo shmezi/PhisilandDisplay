@@ -14,6 +14,7 @@
 #include "WifiModule.h"
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
+#include "logging/Logger.h"
 #include "store/Store.h"
 
 String DovetailSystem::getCodeBaseForId(const String &id) {
@@ -34,7 +35,16 @@ bool DovetailSystem::connectMode = false;
 
 void onWebSocketMessage(const AwsFrameInfo *info, const String &message, size_t len) {
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        DovetailSystem::ws.textAll("test");
+        JsonDocument doc;
+        DeserializationError err = deserializeJson(doc, message);
+        if (err) {
+            Serial.printf("JSON parse failed: %s\n", err.c_str());
+            return;
+        }
+        if (doc["command"] == "register") {
+            Logger::log("Mac attempted to register: " + String(doc["mac"]));
+            Store::registeredMacsToVerify.push_back(WifiModule::parsePrettyMac(doc["mac"]));
+        }
     }
 }
 
@@ -73,8 +83,8 @@ void DovetailSystem::code(AsyncWebServerRequest *request) {
         return;
     }
 
-
-    const auto path = Store::getScriptFilePathByMac(request->getParam("mac")->value());
+    const auto formattedMac = request->getParam("mac")->value();
+    const auto path = Store::getScriptFilePathByMac(WifiModule::parsePrettyMac(formattedMac));
 
     if (SD.exists(path)) {
         // Send the file. "text/plain" is usually best for code/scripts
@@ -89,7 +99,11 @@ void DovetailSystem::defineRoutes() {
     server.on("/code", HTTP_GET, code);
 }
 
-void DovetailSystem::connectionLoop() {
+void DovetailSystem::macVerificationLoop() {
+    for (int i = 0; i < Store::registeredMacsToVerify.size(); ++i) {
+        const auto mac = Store::registeredMacsToVerify[i];
+        // Store::macToCode
+    }
 }
 
 void DovetailSystem::init() {
@@ -101,7 +115,7 @@ void DovetailSystem::init() {
 }
 
 void DovetailSystem::resetAllDevices() {
-    for (auto &name_to_mac: Store::nameToMac) {
+    for (auto &[name,mac]: Store::nameToMac) {
         // sendMessage(name_to_mac.second, "reset");
     }
 }
