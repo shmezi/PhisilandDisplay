@@ -32,7 +32,7 @@ AsyncWebSocket DovetailSystem::ws("/ws");
 bool DovetailSystem::connectMode = false;
 
 
-void onWebSocketMessage(const AwsFrameInfo *info, const String& message, size_t len) {
+void onWebSocketMessage(const AwsFrameInfo *info, const String &message, size_t len) {
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
         DovetailSystem::ws.textAll("test");
     }
@@ -43,13 +43,16 @@ void onWebSocketEvent(
     AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
     void *arg, uint8_t *data, size_t len) {
     switch (type) {
-        case WS_EVT_CONNECT:
-
-
+        case WS_EVT_CONNECT: {
             Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
                           client->remoteIP().toString().c_str());
-            client->text("Welcome Client!");
-            break;
+            JsonDocument doc;
+            doc["command"] = "SHUTDOWN";
+            String output;
+            serializeJson(doc, output);
+            client->text(output);
+        }
+        break;
         case WS_EVT_DISCONNECT:
             Serial.printf("WebSocket client #%u disconnected\n", client->id());
             break;
@@ -62,6 +65,7 @@ void onWebSocketEvent(
             break;
     }
 }
+
 
 void DovetailSystem::code(AsyncWebServerRequest *request) {
     if (!request->hasParam("mac")) {
