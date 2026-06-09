@@ -74,6 +74,7 @@ char receivedChars[64]; // Buffer to store the received data
 void loop() {
     Display::lvglTask();
     Game::setCurrentScreen();
+    DovetailSystem::macVerificationLoop();
     Game::updateValues();
     HoistSystem::hoistLoop();
     WifiModule::updateDeviceCount();

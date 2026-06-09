@@ -33,6 +33,8 @@ public:
     static AsyncWebSocket ws;
 
 
+    static void notFound404(AsyncWebServerRequest *request);
+
     static void code(AsyncWebServerRequest *request);
 
     static void defineRoutes();

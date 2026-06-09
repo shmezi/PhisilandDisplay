@@ -19,7 +19,7 @@ struct ClientConfig;
 std::map<std::array<uint8_t, 6>, IPAddress> Store::macToIp;
 
 std::map<std::array<uint8_t, 6>, String> Store::macToName;
-std::vector<std::array<uint8_t, 6> > Store::registeredMacsToVerify;
+std::map<u_int32_t, std::array<uint8_t, 6> > Store::registeredMacsToVerify;
 std::map<String, std::array<uint8_t, 6> > Store::nameToMac;
 
 

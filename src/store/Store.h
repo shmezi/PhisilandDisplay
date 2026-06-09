@@ -17,7 +17,7 @@
 
 class Store {
 public:
-    static std::vector<std::array<uint8_t, 6> > registeredMacsToVerify;
+    static std::map<u_int32_t, std::array<uint8_t, 6> > registeredMacsToVerify;
 
     static std::map<std::array<uint8_t, 6>, IPAddress> macToIp;
 

@@ -85,20 +85,16 @@ void WifiModule::updateDeviceCount() {
     lv_label_set_text(ui_ConnectedLabel, updatedConnectedClientsLabel.c_str());
 }
 
-void WifiModule::ipToMac(IPAddress &ip, uint8_t *macOut) {
-    uint8_t mac[6];
-    WiFiClass::hostByName(ip.toString().c_str(), ip);
-    macOut = mac;
-}
 
-void WifiModule::kickUserByMac(uint8_t *mac[6]) {
+
+void WifiModule::kickUserByMac(std::array<uint8_t, 6> mac) {
     wifi_sta_list_t connectedClients;
     esp_wifi_ap_get_sta_list(&connectedClients);
 
     for (int i = 0; i < connectedClients.num; i++) {
         const wifi_sta_info_t client = connectedClients.sta[i];
         uint16_t aidOfClientToKick = 0;
-        if (memcmp(mac, client.mac, 6) == 0) {
+        if (memcmp(mac.data(), client.mac, 6) == 0) {
             esp_wifi_ap_get_sta_aid(client.mac, &aidOfClientToKick);
             esp_wifi_deauth_sta(aidOfClientToKick);
             break;
@@ -106,12 +102,7 @@ void WifiModule::kickUserByMac(uint8_t *mac[6]) {
     }
 }
 
-void WifiModule::kickUserByIp(IPAddress &ip) {
-    uint8_t *mac[6];
-    ipToMac(ip, *mac);
 
-    kickUserByMac(mac);
-}
 
 void WifiModule::startWifi() {
     initWifiName();

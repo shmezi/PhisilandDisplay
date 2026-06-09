@@ -1,0 +1,13 @@
+//
+// Created by Ezra Golombek on 09/06/2026.
+//
+
+#ifndef PHISILANDDISPLAY_WSCOMMANDHANDLER_H
+#define PHISILANDDISPLAY_WSCOMMANDHANDLER_H
+
+
+class WSCommandHandler {
+};
+
+
+#endif //PHISILANDDISPLAY_WSCOMMANDHANDLER_H

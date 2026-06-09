@@ -33,7 +33,7 @@ AsyncWebSocket DovetailSystem::ws("/ws");
 bool DovetailSystem::connectMode = false;
 
 
-void onWebSocketMessage(const AwsFrameInfo *info, const String &message, size_t len) {
+void onWebSocketMessage(const uint8_t &wsClientId, const AwsFrameInfo *info, const String &message, size_t len) {
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
         JsonDocument doc;
         DeserializationError err = deserializeJson(doc, message);
@@ -43,7 +43,7 @@ void onWebSocketMessage(const AwsFrameInfo *info, const String &message, size_t 
         }
         if (doc["command"] == "register") {
             Logger::log("Mac attempted to register: " + String(doc["mac"]));
-            Store::registeredMacsToVerify.push_back(WifiModule::parsePrettyMac(doc["mac"]));
+            Store::registeredMacsToVerify[wsClientId] = WifiModule::parsePrettyMac(doc["mac"]);
         }
     }
 }
@@ -68,7 +68,8 @@ void onWebSocketEvent(
             break;
         case WS_EVT_DATA:
             data[len] = 0; // Null-terminate incoming character payload
-            onWebSocketMessage(static_cast<AwsFrameInfo *>(arg), reinterpret_cast<char *>(data), len);
+
+            onWebSocketMessage(client->id(), static_cast<AwsFrameInfo *>(arg), reinterpret_cast<char *>(data), len);
             break;
         case WS_EVT_PONG:
         case WS_EVT_ERROR:
@@ -76,6 +77,10 @@ void onWebSocketEvent(
     }
 }
 
+void DovetailSystem::notFound404(AsyncWebServerRequest *request) {
+    Logger::log("Incoming request for: " + request->url());
+    request->send(404, "text/plain", "Not found");
+}
 
 void DovetailSystem::code(AsyncWebServerRequest *request) {
     if (!request->hasParam("mac")) {
@@ -83,26 +88,38 @@ void DovetailSystem::code(AsyncWebServerRequest *request) {
         return;
     }
 
-    const auto formattedMac = request->getParam("mac")->value();
-    const auto path = Store::getScriptFilePathByMac(WifiModule::parsePrettyMac(formattedMac));
-
-    if (SD.exists(path)) {
+    // if (SD.exists(path)) {
         // Send the file. "text/plain" is usually best for code/scripts
-        request->send(SD, path, "text/plain");
-    } else {
-        // Fallback if the file hasn't been created yet
-        request->send(404, "text/plain", "File not found on SD card!");
-    }
+        request->send(SD, "/scripts/smallDevice.ezra", "text/plain");
+    // } else {
+    //     // Fallback if the file hasn't been created yet
+    //     request->send(404, "text/plain", "File not found on SD card!");
+    // }
 }
 
 void DovetailSystem::defineRoutes() {
     server.on("/code", HTTP_GET, code);
+    server.onNotFound(notFound404);
+
 }
 
 void DovetailSystem::macVerificationLoop() {
-    for (int i = 0; i < Store::registeredMacsToVerify.size(); ++i) {
-        const auto mac = Store::registeredMacsToVerify[i];
-        // Store::macToCode
+    while (!Store::registeredMacsToVerify.empty()) {
+        Logger::log("Verifying a mac!");
+        auto &[clientId,mac] = *Store::registeredMacsToVerify.begin();
+
+        if (const auto macToCode = Store::macToCode.find(mac); macToCode == Store::macToCode.end()) {
+            JsonDocument doc;
+            doc["command"] = "register_success";
+            String output;
+            serializeJson(doc, output);
+
+            ws.client(clientId)->text(output);
+            Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
+            continue;
+        }
+
+        Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
     }
 }
 
