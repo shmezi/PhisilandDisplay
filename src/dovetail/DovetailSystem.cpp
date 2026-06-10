@@ -80,7 +80,7 @@ void DovetailSystem::code(AsyncWebServerRequest *request) {
     const auto mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
     const auto scriptFile = std::make_shared<std::string>(Store::getScriptFilePathByMac(mac).c_str());
 
-    FileServer::dispatch(request, [script = scriptFile](const auto& result) {
+    FileServer::dispatch(request, [script = scriptFile](const auto &result) {
         const auto s = *script.get();
         File file = SD.open(s.c_str(), FILE_READ);
         Logger::log("Opening file:  '" + String(s.c_str()) + "'!");
@@ -117,8 +117,11 @@ void DovetailSystem::macVerificationLoop() {
 
         if (AsyncWebSocketClient *client = ws.client(clientId); client && client->status() == WS_CONNECTED)
             client->text(messageContentToSend);
-
-        Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
+        if (isAllowedOnNetwork)
+            Store::registeredDeviceMacToClientId[mac] = clientId;
+        Store::registeredMacsToVerify
+                .
+                erase(Store::registeredMacsToVerify.begin());
     }
 }
 

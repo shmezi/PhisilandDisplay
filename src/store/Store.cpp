@@ -24,6 +24,7 @@ std::map<std::array<uint8_t, 6>, IPAddress> Store::macToIp;
 
 std::map<std::array<uint8_t, 6>, String> Store::macToName;
 std::map<u_int32_t, std::array<uint8_t, 6> > Store::registeredMacsToVerify;
+std::map<std::array<uint8_t, 6>, u_int32_t> Store::registeredDeviceMacToClientId;
 std::map<String, std::array<uint8_t, 6> > Store::nameToMac;
 
 

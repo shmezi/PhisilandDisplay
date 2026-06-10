@@ -29,6 +29,8 @@ public:
 
     static bool needsSave;
 
+    static std::map<std::array<uint8_t, 6>, u_int32_t> registeredDeviceMacToClientId;
+
     static void initSD();
 
     static QueueHandle_t sdQueue;
