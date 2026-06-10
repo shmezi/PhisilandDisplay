@@ -19,9 +19,6 @@ struct FileWritePacket {
 
 
 class DovetailSystem {
-
-
-
     static std::vector<String> registeredMacsToVerify;
 
 public:
@@ -40,6 +37,10 @@ public:
     static void defineRoutes();
 
     static void macVerificationLoop();
+
+    static void sendMessage(const std::array<uint8_t, 6> &mac, const String &message);
+
+    static void sendMessage(const String &name, const String &message);
 
     static void init();
 

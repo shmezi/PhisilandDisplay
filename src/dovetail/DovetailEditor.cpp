@@ -84,7 +84,7 @@ void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
     JsonDocument responseDoc;
     JsonArray array = responseDoc.to<JsonArray>();
 
-    for (auto &v: Store::macToIp) {
+    for (auto &v: Store::registeredDeviceMacToClientId) {
         auto &mac = v.first;
         auto &ip = v.second;
         JsonObject device = array.add<JsonObject>();
@@ -151,15 +151,13 @@ void DovetailEditor::runScript(AsyncWebServerRequest *request) {
         String filename = request->getParam("name")->value();
         const auto formattedMac = request->getParam("mac")->value();
         std::array<uint8_t, 6> deviceMac = WifiModule::parsePrettyMac(formattedMac);
-        // This is the MAC
 
-        // 1. Save locally so the Master knows what it last deployed
         Logger::log(
             "Running for device '" + formattedMac + "' with " + String(Store::macToIp.count(deviceMac)));
 
         // 2. Lookup the IP for this specific device
         // If you are using a std::map<String, IPAddress> macToIp:
-        if (Store::macToIp.count(deviceMac)) {
+        if (Store::registeredDeviceMacToClientId.count(deviceMac)) {
             // IPAddress targetIP = macToIp[deviceId];
 
             // 3. Send the message to the specific device
@@ -167,6 +165,7 @@ void DovetailEditor::runScript(AsyncWebServerRequest *request) {
             // DovetailSystem::sendMessage(deviceId, "reset"); TODO: RESET
             Store::macToCode[deviceMac] = filename;
             Store::needsSave = true;
+            DovetailSystem::sendMessage(deviceMac, "script");
             request->send(200, "text/plain", "Deploying " + filename + " to " + formattedMac);
         } else {
             request->send(404, "text/plain", "Device not found or offline");

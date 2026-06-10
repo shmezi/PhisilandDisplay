@@ -16,6 +16,7 @@
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
 #include "store/FileServer.h"
+#include "store/SDLock.h"
 #include "store/Store.h"
 
 String DovetailSystem::getCodeBaseForId(const String &id) {
@@ -78,18 +79,10 @@ void DovetailSystem::code(AsyncWebServerRequest *request) {
         return;
     }
     const auto mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
-    const auto scriptFile = std::make_shared<std::string>(Store::getScriptFilePathByMac(mac).c_str());
+    const auto scriptFile = Store::getScriptFilePathByMac(mac);
 
-    FileServer::dispatch(request, [script = scriptFile](const auto &result) {
-        const auto s = *script.get();
-        File file = SD.open(s.c_str(), FILE_READ);
-        Logger::log("Opening file:  '" + String(s.c_str()) + "'!");
-        if (!file) {
-            result->sendError("Could not open / read file!");
-            return;
-        }
-        result->sendSuccess(file.readString());
-    });
+    SDLock lock;
+    request->send(SD, scriptFile, "text/plain");
 }
 
 void DovetailSystem::defineRoutes() {
@@ -123,6 +116,23 @@ void DovetailSystem::macVerificationLoop() {
                 .
                 erase(Store::registeredMacsToVerify.begin());
     }
+}
+
+void DovetailSystem::sendMessage(const std::array<uint8_t, 6> &mac, const String &message) {
+    JsonDocument doc;
+    doc["command"] = message;
+    String serialized;
+    serializeJson(doc, serialized);
+    Logger::log("For testing purposes we are sending the message as a command! THIS NEEDS TO BE REFINED!");
+
+    AsyncWebSocketClient *client = ws.client(Store::registeredDeviceMacToClientId[mac]);
+    if (client && client->status() == WS_CONNECTED) {
+        client->text(serialized);
+    }
+}
+
+void DovetailSystem::sendMessage(const String &name, const String &message) {
+    sendMessage(Store::nameToMac[name], message);
 }
 
 void DovetailSystem::init() {
