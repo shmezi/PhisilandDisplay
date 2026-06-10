@@ -15,6 +15,7 @@
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
+#include "store/FileServer.h"
 #include "store/Store.h"
 
 String DovetailSystem::getCodeBaseForId(const String &id) {
@@ -83,18 +84,23 @@ void DovetailSystem::notFound404(AsyncWebServerRequest *request) {
 }
 
 void DovetailSystem::code(AsyncWebServerRequest *request) {
-    // if (!request->hasParam("mac")) {
-    //     request->send(500, "text/plain", "Mac address not provided!");
-    //     return;
-    // }
+    if (!request->hasParam("mac")) {
+        request->send(500, "text/plain", "Mac address not provided!");
+        return;
+    }
+    const auto mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
+    const auto scriptFile = std::make_shared<std::string>(Store::getScriptFilePathByMac(mac).c_str());
 
-    // if (SD.exists(path)) {
-    // Send the file. "text/plain" is usually best for code/scripts
-    request->send(SD, "/scripts/smallDevice.ezra", "text/plain");
-    // } else {
-    //     // Fallback if the file hasn't been created yet
-    //     request->send(404, "text/plain", "File not found on SD card!");
-    // }
+    FileServer::dispatch(request, [script = scriptFile](auto result) {
+        const auto s = *script.get();
+        File file = SD.open(s.c_str(), FILE_READ);
+        Logger::log("Opening file:  '" + String(s.c_str()) + "'!");
+        if (!file) {
+            result->sendError("Could not open / read file!");
+            return;
+        }
+        result->sendSuccess(file.readString());
+    });
 }
 
 void DovetailSystem::defineRoutes() {
@@ -108,22 +114,23 @@ void DovetailSystem::macVerificationLoop() {
         auto &[clientId,mac] = *Store::registeredMacsToVerify.begin();
 
         if (const auto macToCode = Store::macToCode.find(mac); macToCode == Store::macToCode.end()) {
-            JsonDocument doc;
-            doc["command"] = "register_success";
-            String output;
-            serializeJson(doc, output);
-
-            AsyncWebSocketClient *client = ws.client(clientId);
-            if (client && client->status() == WS_CONNECTED) {
-                client->text(output);
-            } else {
-                Logger::log("Client disconnected before verification completed");
-            }
             Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
-
+            WifiModule::kickUserByMac(mac);
+            Logger::log("Client was kicked off since they are not registered!");
             continue;
         }
+        Logger::log("Client is on the allowlist!");
+        JsonDocument doc;
+        doc["command"] = "register_success";
+        String output;
+        serializeJson(doc, output);
 
+        AsyncWebSocketClient *client = ws.client(clientId);
+        if (client && client->status() == WS_CONNECTED) {
+            client->text(output);
+        } else {
+            Logger::log("Client disconnected before verification completed");
+        }
         Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
     }
 }

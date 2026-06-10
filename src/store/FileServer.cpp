@@ -18,8 +18,8 @@ void FileServer::dispatch(
     AsyncWebServerRequest *request,
     std::function<void(std::shared_ptr<SDResult>)> work,
     const String &contentType) {
-    auto requestData = std::make_shared<SDResult>();
-    SDRequest req{work, requestData};
+    auto result = std::make_shared<SDResult>();
+    SDRequest req{work, result};
 
     if (xQueueSend(_queue, &req, 0) != pdTRUE) {
         request->send(503, "text/plain", "Server busy");
@@ -28,12 +28,14 @@ void FileServer::dispatch(
 
     request->send(request->beginChunkedResponse(
         contentType,
-        [requestData](uint8_t *buf, size_t maxLen, size_t index) -> size_t {
-            if (!requestData->ready) return RESPONSE_TRY_AGAIN;
-            if (requestData->error) return 0;
-            if (index >= requestData->content.length()) return 0;
-            size_t len = min(maxLen, requestData->content.length() - index);
-            memcpy(buf, requestData->content.c_str() + index, len);
+        [result](uint8_t *buf, size_t maxLen, size_t index) -> size_t {
+            if (index == 0) {
+                xSemaphoreTake(result->done, portMAX_DELAY); // ← wait once
+            }
+            if (result->error) return 0;
+            if (index >= result->content.length()) return 0;
+            size_t len = min(maxLen, result->content.length() - index);
+            memcpy(buf, result->content.c_str() + index, len);
             return len;
         }
     ));
@@ -45,7 +47,7 @@ void FileServer::_workerTask(void *pvParameters) {
         if (xQueueReceive(_queue, &req, portMAX_DELAY)) {
             SDLock lock;
             req.work(req.result);
-            req.result->ready = true;
+            xSemaphoreGive(req.result->done);
         }
     }
 }

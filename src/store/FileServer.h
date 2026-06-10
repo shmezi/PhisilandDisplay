@@ -12,7 +12,7 @@
 
 struct SDResult {
     String content;
-    bool ready = false;
+    SemaphoreHandle_t done = xSemaphoreCreateBinary();
     bool error = false;
 
     void sendError(const String &data) {
@@ -22,6 +22,10 @@ struct SDResult {
 
     void sendSuccess(const String &data) {
         content = data;
+    }
+
+    ~SDResult() {
+        vSemaphoreDelete(done);
     }
 };
 

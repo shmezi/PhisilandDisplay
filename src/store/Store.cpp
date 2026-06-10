@@ -273,6 +273,7 @@ void Store::initValuesFromSD() {
     initSD();
     ensureFileExists("scripts");
     ensureFileExists("hoists");
+    loadRegistryFromSD();
     DovetailEditor::cacheWebpageToRAM();
     FileServer::init();
 }

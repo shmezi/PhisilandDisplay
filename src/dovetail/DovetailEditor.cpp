@@ -73,7 +73,8 @@ void DovetailEditor::initEditorRoutes() {
     server.on("/rename", HTTP_GET, renameScript);
     server.on("/list", HTTP_GET, listScripts);
     server.on("/run", HTTP_GET, runScript);
-    server.on("/save", HTTP_POST, nullptr, nullptr, saveFile);
+    server.on("/save", HTTP_POST, [](auto *v) {
+    }, nullptr, saveFile);
 }
 
 void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
@@ -114,9 +115,11 @@ void DovetailEditor::deleteScript(AsyncWebServerRequest *request) {
         return;
     }
 
-    const auto path = "/scripts/" + request->getParam("name")->value();
-    FileServer::dispatch(request, [path](auto result) {
-        if (!SD.remove(path)) {
+    const auto path = std::make_shared<std::string>(
+        std::string("/scripts/") + request->getParam("name")->value().c_str());
+    FileServer::dispatch(request, [p = path](auto result) {
+        auto toDelete = *p.get();
+        if (!SD.remove(toDelete.c_str())) {
             result->sendError("Delete Operation Failed");
             return;
         }
@@ -176,10 +179,16 @@ void DovetailEditor::renameScript(AsyncWebServerRequest *request) {
         request->send(400, "text/plain", "Missing old & new params");
         return;
     }
-    const auto oldPath = "/scripts/" + request->getParam("old")->value();
-    const auto newPath = "/scripts/" + request->getParam("new")->value();
-    FileServer::dispatch(request, [oldPath,newPath](auto response) {
-        if (!SD.rename(oldPath, newPath)) {
+    const auto oldPath = std::make_shared<std::string>(
+        std::string("/scripts/") + request->getParam("old")->value().c_str());
+    const auto newPath = std::make_shared<std::string>(
+        std::string("/scripts/") + request->getParam("new")->value().c_str());
+
+    FileServer::dispatch(request, [ o = oldPath, n = newPath](auto response) {
+        const auto oldV = *o.get();
+        const auto newV = *n.get();
+
+        if (!SD.rename(oldV.c_str(), newV.c_str())) {
             response->sendError("Failed to rename file!");
             return;
         }
@@ -194,19 +203,17 @@ void DovetailEditor::readFile(AsyncWebServerRequest *request) {
     }
 
     const auto filename = request->getParam("name")->value();
+    const auto path = std::make_shared<std::string>("/scripts/" + std::string(filename.c_str()));
 
-    FileServer::dispatch(request, [filename](auto result) {
-        const auto path = "/scripts/" + filename;
-        File file = SD.open(path.c_str(), FILE_READ);
-
+    FileServer::dispatch(request, [v = path](auto result) {
+        const auto a = *v.get();
+        File file = SD.open(a.c_str(), FILE_READ);
+        Logger::log("Opening file:  '" + String(a.c_str()) + "'!");
         if (!file) {
             result->sendError("Could not open / read file!");
-
             return;
         }
-
-
-        result->sendSuccess(file.readString());
+        result->sendSuccess(std::move(file.readString()));
         file.close();
     });
 }
@@ -218,8 +225,13 @@ void DovetailEditor::saveFile(AsyncWebServerRequest *request,
         request->send(400, "text/plain", "Missing name");
         return;
     }
-
     String name = request->getParam("name")->value();
+    FileServer::dispatch(request,[](auto request) {
+
+
+    });
+
+
     String tmpPath = "/scripts/_tmp_" + name;
     String path = "/scripts/" + name;
 
