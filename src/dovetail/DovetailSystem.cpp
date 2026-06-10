@@ -83,14 +83,14 @@ void DovetailSystem::notFound404(AsyncWebServerRequest *request) {
 }
 
 void DovetailSystem::code(AsyncWebServerRequest *request) {
-    if (!request->hasParam("mac")) {
-        request->send(500, "text/plain", "Mac address not provided!");
-        return;
-    }
+    // if (!request->hasParam("mac")) {
+    //     request->send(500, "text/plain", "Mac address not provided!");
+    //     return;
+    // }
 
     // if (SD.exists(path)) {
-        // Send the file. "text/plain" is usually best for code/scripts
-        request->send(SD, "/scripts/smallDevice.ezra", "text/plain");
+    // Send the file. "text/plain" is usually best for code/scripts
+    request->send(SD, "/scripts/smallDevice.ezra", "text/plain");
     // } else {
     //     // Fallback if the file hasn't been created yet
     //     request->send(404, "text/plain", "File not found on SD card!");
@@ -100,7 +100,6 @@ void DovetailSystem::code(AsyncWebServerRequest *request) {
 void DovetailSystem::defineRoutes() {
     server.on("/code", HTTP_GET, code);
     server.onNotFound(notFound404);
-
 }
 
 void DovetailSystem::macVerificationLoop() {
@@ -114,8 +113,14 @@ void DovetailSystem::macVerificationLoop() {
             String output;
             serializeJson(doc, output);
 
-            ws.client(clientId)->text(output);
+            AsyncWebSocketClient *client = ws.client(clientId);
+            if (client && client->status() == WS_CONNECTED) {
+                client->text(output);
+            } else {
+                Logger::log("Client disconnected before verification completed");
+            }
             Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
+
             continue;
         }
 

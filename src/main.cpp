@@ -78,10 +78,12 @@ void loop() {
     Game::updateValues();
     HoistSystem::hoistLoop();
     WifiModule::updateDeviceCount();
+    DovetailSystem::ws.cleanupClients();
     if (Game::shouldEndActivity) {
         Game::endRound();
         Game::shouldEndActivity = false;
     }
+
     // DovetailSystem::server.handleClient();
     delay(5);
 }

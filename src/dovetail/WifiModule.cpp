@@ -19,6 +19,8 @@
 #include "store/Store.h"
 #include "ui_output/ui_FileSelection.h"
 #include "widgets/label/lv_label.h"
+#include <esp_wifi.h>
+
 const char *verbs[] = {
     "Carve",
     "Shape",
@@ -107,6 +109,16 @@ void WifiModule::kickUserByMac(std::array<uint8_t, 6> mac) {
 void WifiModule::startWifi() {
     initWifiName();
     WiFi.softAP(ssid, password, 1, 0, 5);
+
+
+    wifi_config_t conf;
+    esp_wifi_get_config(WIFI_IF_AP, &conf);
+    conf.ap.pairwise_cipher = WIFI_CIPHER_TYPE_CCMP;
+    esp_wifi_set_config(WIFI_IF_AP, &conf);
+
+
+
+
     IPAddress apIP = WiFi.softAPIP();
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
 
@@ -115,8 +127,8 @@ void WifiModule::startWifi() {
     // WiFi.onEvent(wifiEvent);
 
 
-    DovetailSystem::dnsServer.setTTL(300);
-    DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
+    // DovetailSystem::dnsServer.setTTL(300);
+    // DovetailSystem::dnsServer.start(53, "am.it", WiFi.softAPIP());
     DovetailSystem::server.addHandler(&DovetailSystem::ws);
     DovetailSystem::server.begin();
 }

@@ -8,6 +8,9 @@
 #include <SD.h>
 #include <set>
 
+#include "FileServer.h"
+#include "SDLock.h"
+#include "dovetail/DovetailEditor.h"
 #include "dovetail/DovetailSystem.h"
 #include "dovetail/WifiModule.h"
 #include "hoist/HoistSystem.h"
@@ -16,6 +19,7 @@
 
 
 struct ClientConfig;
+
 std::map<std::array<uint8_t, 6>, IPAddress> Store::macToIp;
 
 std::map<std::array<uint8_t, 6>, String> Store::macToName;
@@ -35,25 +39,9 @@ void Store::initSD() {
     Logger::log("Card initialized.");
 }
 
-QueueHandle_t Store::sdQueue;
-// Background Task for SD Writing
-void sdWorkerTask(void *pvParameters) {
-    FileWritePacket packet{};
-    for (;;) {
-        // Wait indefinitely for a packet from the queue
-        if (xQueueReceive(Store::sdQueue, &packet, portMAX_DELAY)) {
-            File f = SD.open(packet.path, packet.isFirst ? FILE_WRITE : FILE_APPEND);
-            if (f) {
-                f.write(packet.data, packet.len);
-                f.close();
-            }
-            // CRITICAL: Free the memory we allocated in the callback
-            free(packet.data);
-        }
-    }
-}
 
 String readScriptFileToString(const String &path) {
+    SDLock lock;
     File script = SD.open("/" + path + ".ezra");
     if (!script) {
         Logger::error("Failed to open " + path + " script.");
@@ -74,6 +62,7 @@ String readScriptFileToString(const String &path) {
 }
 
 bool Store::ensureFileExists(const String &name) {
+    SDLock lock;
     if (SD.exists("/" + name)) return true;
     if (name.indexOf('.') == -1) {
         SD.mkdir("/" + name);
@@ -90,6 +79,7 @@ bool Store::ensureFileExists(const String &name) {
 }
 
 bool Store::getFileOrCreateDefault(const String &name, const std::function<bool(File &file)> &defaultValue) {
+    SDLock lock;
     if (SD.exists("/" + name)) return true;
     Logger::log(name + " not found. Initializing empty file.");
     File file = SD.open("/" + name, FILE_WRITE);
@@ -147,6 +137,7 @@ Hoist Store::loadHoistFromDocument(JsonDocument &hoistDocument) {
 }
 
 void Store::loadHoists() {
+    SDLock lock;
     hoistEntriesForHoistSelection = "";
     auto hoistsDirectory = SD.open("/hoists");
 
@@ -183,6 +174,7 @@ void Store::loadRegistryFromSD() {
         return true;
     });
 
+    SDLock lock;
 
     File file = SD.open("/config.json", FILE_READ);
     if (file.size() == 0) {
@@ -222,6 +214,7 @@ void Store::loadRegistryFromSD() {
 }
 
 void Store::ensureDeleted(const String &name) {
+    SDLock lock;
     if (SD.exists(name)) {
         SD.remove(name);
     }
@@ -266,6 +259,7 @@ String Store::getScriptFilePathByMac(const std::array<uint8_t, 6> &mac) {
 }
 
 String Store::readFileToString(const String &name) {
+    SDLock lock;
     if (File file = SD.open("/" + name, FILE_READ)) {
         const auto fileContents = file.readString();
         file.close();
@@ -279,13 +273,12 @@ void Store::initValuesFromSD() {
     initSD();
     ensureFileExists("scripts");
     ensureFileExists("hoists");
-
-    sdQueue = xQueueCreate(60, sizeof(FileWritePacket));
-
-    xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
+    DovetailEditor::cacheWebpageToRAM();
+    FileServer::init();
 }
 
 void Store::cleanupTempFiles() {
+    SDLock lock;
     File root = SD.open("/scripts");
     File f = root.openNextFile();
     while (f) {

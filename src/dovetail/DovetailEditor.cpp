@@ -19,6 +19,43 @@
 #include "game/Game.h"
 #include "logging/Logger.h"
 #include "store/Store.h"
+#include "DovetailEditor.h"
+#include <SD.h>
+
+#include "store/FileServer.h"
+std::vector<uint8_t> DovetailEditor::htmlBuffer;
+
+bool DovetailEditor::cacheWebpageToRAM() {
+    // 1. Open the target file from storage
+    File file = SD.open("/phistudio.html.gz", FILE_READ);
+    if (!file) {
+        // [LOG] Error: Failed to open webpage file for caching!
+        return false;
+    }
+
+    size_t fileSize = file.size();
+    if (fileSize == 0) {
+        file.close();
+        return false;
+    }
+
+    // 2. Resize our vector to fit the file perfectly (allocates RAM)
+    htmlBuffer.resize(fileSize);
+
+    // 3. Read the entire raw binary stream straight into RAM memory
+    size_t bytesRead = file.read(htmlBuffer.data(), fileSize);
+    file.close();
+
+    // 4. Verify the transfer integrity
+    if (bytesRead != fileSize) {
+        htmlBuffer.clear(); // Free memory if reading failed midway
+        return false;
+    }
+
+    // [LOG] Web Editor successfully cached to RAM! Size: X bytes.
+    return true;
+}
+
 
 void DovetailEditor::initEditorRoutes() {
     auto &server = DovetailSystem::server;
@@ -28,25 +65,15 @@ void DovetailEditor::initEditorRoutes() {
     server.on("/", HTTP_GET, webpage);
     // server.serveStatic("/lib", SD, "/lib/");
 
-    server.on("/save", HTTP_POST,
-              [](AsyncWebServerRequest *request) {
-              }, // request handler (empty)
-              nullptr, // upload handler (none)
-              saveFile // body handler
-    );
-    // Ensure this matches your JS call
-    server.on("/read", HTTP_GET, readFile);
     server.on("/list-devices", HTTP_GET, listDevices);
     server.on("/rename-device", HTTP_GET, renameDevice);
-    // 1. DELETE FILE
-    server.on("/delete", HTTP_GET, deleteDevice);
+    server.on("/delete", HTTP_GET, deleteScript);
+    server.on("/read", HTTP_GET, readFile);
 
-    // 2. RENAME FILE
-    server.on("/rename", HTTP_GET, renameFile);
-
-    // UPDATED LIST ROUTE (Only shows files in /scripts)
-    server.on("/list", HTTP_GET, listFiles);
-    server.on("/run", HTTP_GET, runFile);
+    server.on("/rename", HTTP_GET, renameScript);
+    server.on("/list", HTTP_GET, listScripts);
+    server.on("/run", HTTP_GET, runScript);
+    server.on("/save", HTTP_POST, nullptr, nullptr, saveFile);
 }
 
 void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
@@ -81,32 +108,42 @@ void DovetailEditor::renameDevice(AsyncWebServerRequest *request) {
     }
 }
 
-void DovetailEditor::deleteDevice(AsyncWebServerRequest *request) {
-    if (request->hasParam("name")) {
-        String path = "/scripts/" + request->getParam("name")->value();
-        if (SD.remove(path)) request->send(200, "text/plain", "Deleted");
-        else request->send(500, "text/plain", "Delete Failed");
+void DovetailEditor::deleteScript(AsyncWebServerRequest *request) {
+    if (!request->hasParam("name")) {
+        request->send(400, "text/plain", "Missing name param!");
+        return;
     }
-}
 
-void DovetailEditor::listFiles(AsyncWebServerRequest *request) {
-    String json = "[";
-    File root = SD.open("/scripts");
-    File file = root.openNextFile();
-    while (file) {
-        if (Store::isStandardFile(file)) {
-            if (json != "[") json += ",";
-            json += "\"" + String(file.name()) + "\"";
+    const auto path = "/scripts/" + request->getParam("name")->value();
+    FileServer::dispatch(request, [path](auto result) {
+        if (!SD.remove(path)) {
+            result->sendError("Delete Operation Failed");
+            return;
         }
-        file = root.openNextFile();
-        yield();
-    }
-    root.close();
-    json += "]";
-    request->send(200, "application/json", json);
+        result->sendSuccess("Deleted");
+    });
 }
 
-void DovetailEditor::runFile(AsyncWebServerRequest *request) {
+void DovetailEditor::listScripts(AsyncWebServerRequest *request) {
+    FileServer::dispatch(request, [](auto response) {
+        String json = "[";
+        File root = SD.open("/scripts");
+        File file = root.openNextFile();
+        while (file) {
+            if (Store::isStandardFile(file)) {
+                if (json != "[") json += ",";
+                json += "\"" + String(file.name()) + "\"";
+            }
+            file = root.openNextFile();
+            yield();
+        }
+        root.close();
+        json += "]";
+        response->sendSuccess(json);
+    });
+}
+
+void DovetailEditor::runScript(AsyncWebServerRequest *request) {
     if (request->hasParam("name") && request->hasParam("mac")) {
         String filename = request->getParam("name")->value();
         const auto formattedMac = request->getParam("mac")->value();
@@ -134,26 +171,44 @@ void DovetailEditor::runFile(AsyncWebServerRequest *request) {
     }
 }
 
-void DovetailEditor::renameFile(AsyncWebServerRequest *request) {
-    if (request->hasParam("old") && request->hasParam("new")) {
-        String oldPath = "/scripts/" + request->getParam("old")->value();
-        String newPath = "/scripts/" + request->getParam("new")->value();
-        if (SD.rename(oldPath, newPath)) request->send(200, "text/plain", "Renamed");
-        else request->send(500, "text/plain", "Rename Failed");
+void DovetailEditor::renameScript(AsyncWebServerRequest *request) {
+    if (!request->hasParam("old") && request->hasParam("new")) {
+        request->send(400, "text/plain", "Missing old & new params");
+        return;
     }
+    const auto oldPath = "/scripts/" + request->getParam("old")->value();
+    const auto newPath = "/scripts/" + request->getParam("new")->value();
+    FileServer::dispatch(request, [oldPath,newPath](auto response) {
+        if (!SD.rename(oldPath, newPath)) {
+            response->sendError("Failed to rename file!");
+            return;
+        }
+        response->sendSuccess("Renamed file!");
+    });
 }
 
 void DovetailEditor::readFile(AsyncWebServerRequest *request) {
-    if (request->hasParam("name")) {
-        String filename = request->getParam("name")->value();
-        String path = "/scripts/" + filename; // Must match the folder in /list
-
-        if (SD.exists(path)) {
-            request->send(SD, path, "text/plain");
-        } else {
-            request->send(404, "text/plain", "File Not Found");
-        }
+    if (!request->hasParam("name")) {
+        request->send(400, "text/plain", "Param 'name' missing!");
+        return;
     }
+
+    const auto filename = request->getParam("name")->value();
+
+    FileServer::dispatch(request, [filename](auto result) {
+        const auto path = "/scripts/" + filename;
+        File file = SD.open(path.c_str(), FILE_READ);
+
+        if (!file) {
+            result->sendError("Could not open / read file!");
+
+            return;
+        }
+
+
+        result->sendSuccess(file.readString());
+        file.close();
+    });
 }
 
 void DovetailEditor::saveFile(AsyncWebServerRequest *request,
@@ -193,7 +248,22 @@ void DovetailEditor::saveFile(AsyncWebServerRequest *request,
 
 
 void DovetailEditor::webpage(AsyncWebServerRequest *request) {
-    auto response = request->beginResponse(SD, "/phistudio.html.gz", "text/html", false);
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
+    // Ensure our buffer isn't empty before serving
+    if (!htmlBuffer.empty()) {
+        // Serve straight out of internal RAM
+        AsyncWebServerResponse *response = request->beginResponse(
+            200,
+            "text/html",
+            htmlBuffer.data(),
+            htmlBuffer.size()
+        );
+
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Connection", "close"); // ← add this
+
+        request->send(response);
+    } else {
+        // Fallback error if initialization failed or file was missing at boot
+        request->send(500, "text/plain", "Web Editor Cache Empty!");
+    }
 }
