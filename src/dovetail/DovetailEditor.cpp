@@ -23,13 +23,13 @@
 #include <SD.h>
 
 #include "store/FileServer.h"
+#include "store/SDLock.h"
 std::vector<uint8_t> DovetailEditor::htmlBuffer;
 
 bool DovetailEditor::cacheWebpageToRAM() {
     // 1. Open the target file from storage
     File file = SD.open("/phistudio.html.gz", FILE_READ);
     if (!file) {
-        // [LOG] Error: Failed to open webpage file for caching!
         return false;
     }
 
@@ -39,20 +39,16 @@ bool DovetailEditor::cacheWebpageToRAM() {
         return false;
     }
 
-    // 2. Resize our vector to fit the file perfectly (allocates RAM)
     htmlBuffer.resize(fileSize);
 
-    // 3. Read the entire raw binary stream straight into RAM memory
     size_t bytesRead = file.read(htmlBuffer.data(), fileSize);
     file.close();
 
-    // 4. Verify the transfer integrity
     if (bytesRead != fileSize) {
-        htmlBuffer.clear(); // Free memory if reading failed midway
+        htmlBuffer.clear();
         return false;
     }
 
-    // [LOG] Web Editor successfully cached to RAM! Size: X bytes.
     return true;
 }
 
@@ -61,6 +57,10 @@ void DovetailEditor::initEditorRoutes() {
     auto &server = DovetailSystem::server;
     server.on("/debug", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(200, "text/html", "WebServer Is Functional!");
+    });
+
+    server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(204);
     });
     server.on("/", HTTP_GET, webpage);
     // server.serveStatic("/lib", SD, "/lib/");
@@ -226,10 +226,7 @@ void DovetailEditor::saveFile(AsyncWebServerRequest *request,
         return;
     }
     String name = request->getParam("name")->value();
-    FileServer::dispatch(request,[](auto request) {
-
-
-    });
+    SDLock lock;
 
 
     String tmpPath = "/scripts/_tmp_" + name;

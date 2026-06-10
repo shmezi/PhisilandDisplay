@@ -80,7 +80,7 @@ void DovetailSystem::code(AsyncWebServerRequest *request) {
     const auto mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
     const auto scriptFile = std::make_shared<std::string>(Store::getScriptFilePathByMac(mac).c_str());
 
-    FileServer::dispatch(request, [script = scriptFile](auto result) {
+    FileServer::dispatch(request, [script = scriptFile](const auto& result) {
         const auto s = *script.get();
         File file = SD.open(s.c_str(), FILE_READ);
         Logger::log("Opening file:  '" + String(s.c_str()) + "'!");
