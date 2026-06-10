@@ -112,25 +112,21 @@ void DovetailSystem::macVerificationLoop() {
     while (!Store::registeredMacsToVerify.empty()) {
         Logger::log("Verifying a mac!");
         auto &[clientId,mac] = *Store::registeredMacsToVerify.begin();
-
-        if (const auto macToCode = Store::macToCode.find(mac); macToCode == Store::macToCode.end()) {
-            Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
-            WifiModule::kickUserByMac(mac);
-            Logger::log("Client was kicked off since they are not registered!");
-            continue;
-        }
-        Logger::log("Client is on the allowlist!");
         JsonDocument doc;
-        doc["command"] = "register_success";
-        String output;
-        serializeJson(doc, output);
+        const auto isAllowedOnNetwork = Store::macToCode.find(mac) != Store::macToCode.end();
+        doc["command"] = isAllowedOnNetwork ? "register_success" : "register_failure";
+        Logger::log(
+            isAllowedOnNetwork
+                ? "Client is on the allowlist!"
+                : "Client was kicked off since they are not registered!");
 
-        AsyncWebSocketClient *client = ws.client(clientId);
-        if (client && client->status() == WS_CONNECTED) {
-            client->text(output);
-        } else {
-            Logger::log("Client disconnected before verification completed");
-        }
+
+        String messageContentToSend;
+        serializeJson(doc, messageContentToSend);
+
+        if (AsyncWebSocketClient *client = ws.client(clientId); client && client->status() == WS_CONNECTED)
+            client->text(messageContentToSend);
+
         Store::registeredMacsToVerify.erase(Store::registeredMacsToVerify.begin());
     }
 }
