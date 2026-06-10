@@ -54,27 +54,16 @@ void onWebSocketEvent(
     AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
     void *arg, uint8_t *data, size_t len) {
     switch (type) {
-        case WS_EVT_CONNECT: {
-            Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
-                          client->remoteIP().toString().c_str());
-            JsonDocument doc;
-            doc["command"] = "SHUTDOWN";
-            String output;
-            serializeJson(doc, output);
-            client->text(output);
-        }
-        break;
-        case WS_EVT_DISCONNECT:
-            Serial.printf("WebSocket client #%u disconnected\n", client->id());
-            break;
         case WS_EVT_DATA:
             data[len] = 0; // Null-terminate incoming character payload
-
             onWebSocketMessage(client->id(), static_cast<AwsFrameInfo *>(arg), reinterpret_cast<char *>(data), len);
             break;
+        case WS_EVT_CONNECT:
+        case WS_EVT_DISCONNECT:
         case WS_EVT_PONG:
         case WS_EVT_ERROR:
             break;
+        default: break;
     }
 }
 
@@ -110,8 +99,8 @@ void DovetailSystem::defineRoutes() {
 
 void DovetailSystem::macVerificationLoop() {
     while (!Store::registeredMacsToVerify.empty()) {
-        Logger::log("Verifying a mac!");
         auto &[clientId,mac] = *Store::registeredMacsToVerify.begin();
+        Logger::log(String("Verifying mac: ") + WifiModule::macToString(mac).c_str());
         JsonDocument doc;
         const auto isAllowedOnNetwork = Store::macToCode.find(mac) != Store::macToCode.end();
         doc["command"] = isAllowedOnNetwork ? "register_success" : "register_failure";
