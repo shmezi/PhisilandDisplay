@@ -100,14 +100,16 @@ void DovetailSystem::defineRoutes() {
 void DovetailSystem::macVerificationLoop() {
     while (!Store::registeredMacsToVerify.empty()) {
         auto &[clientId,mac] = *Store::registeredMacsToVerify.begin();
-        Logger::log(String("Verifying mac: ") + WifiModule::macToString(mac).c_str());
         JsonDocument doc;
         const auto isAllowedOnNetwork = Store::macToCode.find(mac) != Store::macToCode.end();
         doc["command"] = isAllowedOnNetwork ? "register_success" : "register_failure";
         Logger::log(
-            isAllowedOnNetwork
-                ? "Client is on the allowlist!"
-                : "Client was kicked off since they are not registered!");
+            String("Mac: ") +
+            WifiModule::macToString(mac).c_str() +
+            (isAllowedOnNetwork
+                 ? " is on the allowlist!"
+                 : " was kicked off since they are not on the allowlist!"
+            ));
 
 
         String messageContentToSend;
