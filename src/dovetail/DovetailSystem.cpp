@@ -116,22 +116,7 @@ void DovetailSystem::macVerificationLoop() {
     }
 }
 
-void DovetailSystem::sendMessage(const std::array<uint8_t, 6> &mac, const String &message) {
-    JsonDocument doc;
-    doc["command"] = message;
-    String serialized;
-    serializeJson(doc, serialized);
-    Logger::log("For testing purposes we are sending the message as a command! THIS NEEDS TO BE REFINED!");
 
-    AsyncWebSocketClient *client = ws.client(Store::registeredDeviceMacToClientId[mac]);
-    if (client && client->status() == WS_CONNECTED) {
-        client->text(serialized);
-    }
-}
-
-void DovetailSystem::sendMessage(const String &name, const String &message) {
-    sendMessage(Store::nameToMac[name], message);
-}
 
 void DovetailSystem::init() {
     defineRoutes();

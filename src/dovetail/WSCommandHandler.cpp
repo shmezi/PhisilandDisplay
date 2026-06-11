@@ -7,9 +7,16 @@
 #include <map>
 #include <memory>
 
+#include "AsyncWebSocket.h"
+#include "DovetailSystem.h"
 #include "commands/Command.h"
+#include "commands/EndActivityCommand.h"
+#include "commands/OnResultCommand.h"
 #include "commands/RegisterCommand.h"
+#include "commands/RemoteLogCommand.h"
+#include "commands/SwitchScreenCommand.h"
 #include "logging/Logger.h"
+#include "store/Store.h"
 std::map<String, std::unique_ptr<Command> > WSCommandHandler::commands;
 
 
@@ -33,6 +40,36 @@ void WSCommandHandler::registerCommand(std::unique_ptr<Command> command) {
     commands[name] = std::move(command);
 }
 
+template<typename F>
+void WSCommandHandler::sendCommand(const std::array<uint8_t, 6> &mac, std::string command, F changes) {
+    JsonDocument doc;
+
+    doc["command"] = command;
+    changes(doc);
+    String serialized;
+    serializeJson(doc, serialized);
+    AsyncWebSocketClient *client = DovetailSystem::ws.client(Store::registeredDeviceMacToClientId[mac]);
+    if (client && client->status() == WS_CONNECTED) {
+        client->text(serialized);
+    }
+}
+
+void WSCommandHandler::startEvent(String client, String eventId, int param) {
+    std::string id = {eventId.c_str()};
+    sendCommand(Store::nameToMac[client], "event", [id, param](JsonDocument &doc) {
+        doc["id"] = id;
+        doc["value"] = param;
+    });
+}
+
+
 void WSCommandHandler::registerAllInternalCommands() {
     registerCommand(std::make_unique<RegisterCommand>());
+    registerCommand(std::make_unique<EndActivityCommand>());
+
+    registerCommand(std::make_unique<OnResultCommand>());
+
+    registerCommand(std::make_unique<RemoteLogCommand>());
+
+    registerCommand(std::make_unique<SwitchScreenCommand>());
 }

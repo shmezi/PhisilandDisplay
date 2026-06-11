@@ -19,6 +19,11 @@ public:
 
     static void registerCommand(std::unique_ptr<Command> command);
 
+    template<class F>
+    static void sendCommand(const std::array<uint8_t, 6> &mac, std::string command, F changes);
+
+    static void startEvent(String client, String eventId, int param);
+
     static void registerAllInternalCommands();
 };
 

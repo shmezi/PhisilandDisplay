@@ -28,6 +28,9 @@ uint32_t Display::lastTick = 0;
 #define CLK_PIN  25
 #define CS_PIN   33
 
+int TFT_HORI_RES = 240;
+int TFT_VERI_RES = 320;
+
 XPT2046_Bitbang Display::touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN);
 uint16_t Display::touchScreenMinimumX = 20;
 uint16_t Display::touchScreenMaximumX = 290;
@@ -93,8 +96,10 @@ void Display::lvglTask() {
 
 void Display::applyScreenCompatibility(lv_display_t *display) {
     if (detectInversionRequirement()) {
+        TFT_HORI_RES = 320;
+        TFT_VERI_RES = 240;
         Logger::log("Screen type A");
-        tft.setRotation(2);
+        tft.setRotation(0);
 
         tft.invertDisplay(false);
         lv_display_set_rotation(display, LV_DISPLAY_ROTATION_180);
