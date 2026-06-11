@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 
+#include "Version.h"
 #include "display/Display.h"
 #include "dovetail/DovetailSystem.h"
 #include "dovetail/WifiModule.h"
@@ -44,11 +45,17 @@ void connectBT(lv_event_t *e) {
 }
 }
 
+void startup() {
+    Logger::log("PhisilandDisplay version: " + VERSION);
+    Logger::log("PhisiDisplay - (c) Created and developed by Ezra Golombek all rights reserved.");
+    Logger::log("© Developed and designed by Ezra Golombek 2026");
+}
 
 void setup() {
     Serial.begin(115200);
     esp_task_wdt_init(5, true);
     Logger::innitLogger();
+    startup();
     Store::initValuesFromSD();
 
     DovetailSystem::init();
