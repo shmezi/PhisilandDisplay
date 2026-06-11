@@ -12,6 +12,7 @@
 
 #include "DovetailEditor.h"
 #include "WifiModule.h"
+#include "WSCommandHandler.h"
 #include "game/Game.h"
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
@@ -40,13 +41,10 @@ void onWebSocketMessage(const uint8_t &wsClientId, const AwsFrameInfo *info, con
         JsonDocument doc;
         DeserializationError err = deserializeJson(doc, message);
         if (err) {
-            Serial.printf("JSON parse failed: %s\n", err.c_str());
+            Logger::error("JSON parse failed: " + String(err.c_str()));
             return;
         }
-        if (doc["command"] == "register") {
-            Logger::log("Mac attempted to register: " + String(doc["mac"]));
-            Store::registeredMacsToVerify[wsClientId] = WifiModule::parsePrettyMac(doc["mac"]);
-        }
+        WSCommandHandler::onIncomingMessage(wsClientId, doc);
     }
 }
 
@@ -137,6 +135,7 @@ void DovetailSystem::sendMessage(const String &name, const String &message) {
 
 void DovetailSystem::init() {
     defineRoutes();
+    WSCommandHandler::registerAllInternalCommands();
     ws.onEvent(onWebSocketEvent);
 
     DovetailEditor::initEditorRoutes();

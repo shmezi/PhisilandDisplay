@@ -4,9 +4,7 @@
 
 #ifndef PHISILANDDISPLAY_COLOR_H
 #define PHISILANDDISPLAY_COLOR_H
-#include <iostream>
-#include <string>
-#include <string_view>
+#include <Arduino.h>
 
 enum class Color {
     BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE,
