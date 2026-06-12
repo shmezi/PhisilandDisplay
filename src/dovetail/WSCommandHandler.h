@@ -9,7 +9,11 @@
 #include <map>
 #include <memory>
 
+#include "DovetailSystem.h"
 #include "commands/Command.h"
+#include "store/Store.h"
+
+class AsyncWebSocketClient;
 
 class WSCommandHandler {
     static std::map<String, std::unique_ptr<Command> > commands;
@@ -27,5 +31,18 @@ public:
     static void registerAllInternalCommands();
 };
 
+template<typename F>
+void WSCommandHandler::sendCommand(const std::array<uint8_t, 6> &mac, std::string command, F changes) {
+    JsonDocument doc;
+
+    doc["command"] = command;
+    changes(doc);
+    String serialized;
+    serializeJson(doc, serialized);
+    AsyncWebSocketClient *client = DovetailSystem::ws.client(Store::registeredDeviceMacToClientId[mac]);
+    if (client && client->status() == WS_CONNECTED) {
+        client->text(serialized);
+    }
+}
 
 #endif //PHISILANDDISPLAY_WSCOMMANDHANDLER_H

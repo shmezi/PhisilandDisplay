@@ -22,6 +22,7 @@
 #include "DovetailEditor.h"
 #include <SD.h>
 
+#include "WSCommandHandler.h"
 #include "store/FileServer.h"
 #include "store/SDLock.h"
 std::vector<uint8_t> DovetailEditor::htmlBuffer;
@@ -165,7 +166,7 @@ void DovetailEditor::runScript(AsyncWebServerRequest *request) {
             // DovetailSystem::sendMessage(deviceId, "reset"); TODO: RESET
             Store::macToCode[deviceMac] = filename;
             Store::needsSave = true;
-            DovetailSystem::sendMessage(deviceMac, "script");
+            WSCommandHandler::sendCommand(deviceMac, "script",[](auto _){});
             request->send(200, "text/plain", "Deploying " + filename + " to " + formattedMac);
         } else {
             request->send(404, "text/plain", "Device not found or offline");

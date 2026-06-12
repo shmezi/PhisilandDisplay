@@ -40,19 +40,7 @@ void WSCommandHandler::registerCommand(std::unique_ptr<Command> command) {
     commands[name] = std::move(command);
 }
 
-template<typename F>
-void WSCommandHandler::sendCommand(const std::array<uint8_t, 6> &mac, std::string command, F changes) {
-    JsonDocument doc;
 
-    doc["command"] = command;
-    changes(doc);
-    String serialized;
-    serializeJson(doc, serialized);
-    AsyncWebSocketClient *client = DovetailSystem::ws.client(Store::registeredDeviceMacToClientId[mac]);
-    if (client && client->status() == WS_CONNECTED) {
-        client->text(serialized);
-    }
-}
 
 void WSCommandHandler::startEvent(String client, String eventId, int param) {
     std::string id = {eventId.c_str()};
