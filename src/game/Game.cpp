@@ -40,7 +40,6 @@ void Game::onStartButton(lv_event_t *e) {
     }
     if (!(lv_obj_has_state(ui_StartStop4, LV_STATE_CHECKED) || lv_obj_has_state(ui_StartStop1, LV_STATE_CHECKED) ||
           lv_obj_has_state(ui_StartStop2, LV_STATE_CHECKED))) {
-        Serial.print("~-1");
         WSCommandHandler::startEvent("core", "stop", 0);
 
         // DovetailSystem::sendMessageToClient("core", "event?val=-1"); //

@@ -13,5 +13,5 @@ String SwitchScreenCommand::name() {
 void SwitchScreenCommand::execute(const uint8_t &wsClientId, JsonDocument doc) {
     String screenName = doc["name"];
     Game::screen = screenName;
-    Game::setCurrentScreen();
+    Game::shouldSwitchScreen = true;
 }

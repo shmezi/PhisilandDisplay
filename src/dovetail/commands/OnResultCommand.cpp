@@ -12,9 +12,10 @@ String OnResultCommand::name() {
 
 void OnResultCommand::execute(const uint8_t &wsClientId, JsonDocument doc) {
     if (doc["id"] == "a")
-        Game::setA(doc["value"]);
+        Game::aValue = String(doc["value"]);
     if (doc["id"] == "b")
-        Game::setB(doc["value"]);
+        Game::bValue = String(doc["value"]);
     if (doc["id"] == "b")
-        Game::setC(doc["value"]);
+        Game::cValue = String(doc["value"]);
+    Game::shouldUpdateValues = true;
 }
