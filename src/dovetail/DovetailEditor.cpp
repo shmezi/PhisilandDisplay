@@ -105,8 +105,13 @@ void DovetailEditor::renameDevice(AsyncWebServerRequest *request) {
         String name = request->getParam("name")->value();
         Store::macToName[mac] = name;
         Store::nameToMac[name] = mac;
-        Store::needsSave = true;
-        request->send(200, "text/plain", "Renamed");
+        FileServer::dispatch(request, [ ](auto response) {
+            File root = SD.open("/config.json", FILE_WRITE);
+
+            Store::saveRegistryToSD(root);
+            response->sendSuccess("Renamed file!");
+            root.close();
+        });
     }
 }
 
@@ -165,8 +170,9 @@ void DovetailEditor::runScript(AsyncWebServerRequest *request) {
             // Assuming sendMessage handles the IP routing
             // DovetailSystem::sendMessage(deviceId, "reset"); TODO: RESET
             Store::macToCode[deviceMac] = filename;
-            Store::needsSave = true;
-            WSCommandHandler::sendCommand(deviceMac, "script",[](auto _){});
+            xSemaphoreGive(Store::needsSave);
+            WSCommandHandler::sendCommand(deviceMac, "script", [](auto _) {
+            });
             request->send(200, "text/plain", "Deploying " + filename + " to " + formattedMac);
         } else {
             request->send(404, "text/plain", "Device not found or offline");

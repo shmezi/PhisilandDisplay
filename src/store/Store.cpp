@@ -27,11 +27,10 @@ std::map<u_int32_t, std::array<uint8_t, 6> > Store::registeredMacsToVerify;
 std::map<std::array<uint8_t, 6>, u_int32_t> Store::registeredDeviceMacToClientId;
 std::map<String, std::array<uint8_t, 6> > Store::nameToMac;
 
-
 std::map<std::array<uint8_t, 6>, String> Store::macToCode;
 //Hey future confused me, Ezra from 9/06, I haven't checked but I think this needs save is regarding the config file.
 //If it's wrong, just change it's name.. Ezra from the past really should have named stuff better aye?
-bool Store::needsSave = false;
+SemaphoreHandle_t Store::needsSave;
 
 
 void Store::initSD() {
@@ -231,7 +230,6 @@ void Store::resetRegistry() {
 }
 
 void Store::saveRegistryToSD(File &file) {
-    if (!needsSave) return;
     JsonDocument doc;
 
     for (auto const &[mac, code]: macToCode) {
@@ -249,8 +247,6 @@ void Store::saveRegistryToSD(File &file) {
         }
     }
     serializeJson(doc, file);
-
-    needsSave = false;
 }
 
 String Store::getScriptFilePathByMac(const std::array<uint8_t, 6> &mac) {
@@ -270,10 +266,24 @@ String Store::readFileToString(const String &name) {
 }
 
 
+void storeConfigLoop(void *pvParameters) {
+    for (;;) {
+        if (xSemaphoreTake(Store::needsSave, portMAX_DELAY) == pdTRUE) {
+            SDLock lock;
+            auto f = SD.open("/config.json",FILE_READ);
+            Store::saveRegistryToSD(f);
+            f.close();
+        }
+    }
+}
+
 void Store::initValuesFromSD() {
+    needsSave = xSemaphoreCreateBinary();
     initSD();
     ensureFileExists("scripts");
     ensureFileExists("hoists");
+    xTaskCreatePinnedToCore(storeConfigLoop, "needingSave", 4096, nullptr, 1, nullptr, 0);
+
     loadRegistryFromSD();
     DovetailEditor::cacheWebpageToRAM();
     FileServer::init();
