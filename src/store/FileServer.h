@@ -20,8 +20,8 @@ struct SDResult {
         content = data;
     }
 
-    void sendSuccess(const String &data) {
-        content = data;
+    void sendSuccess(const String &&data) {
+        content = std::move(data);
     }
 
     ~SDResult() {

@@ -66,55 +66,46 @@ void DovetailEditor::initEditorRoutes() {
     });
     server.on("/", HTTP_GET, webpage);
     // server.serveStatic("/lib", SD, "/lib/");
-
-    server.on("/list-devices", HTTP_GET, listDevices);
-    server.on("/rename-device", HTTP_GET, renameDevice);
-    server.on("/delete", HTTP_GET, deleteScript);
-    server.on("/read", HTTP_GET, readFile);
-
-    server.on("/rename", HTTP_GET, renameScript);
-    server.on("/list", HTTP_GET, listScripts);
-    server.on("/run", HTTP_GET, runScript);
-    server.on("/save", HTTP_POST, [](auto *v) {
-    }, nullptr, saveFile);
+    server.on("/save", HTTP_POST, [](auto*v){}, nullptr, saveFile); // keep HTTP POST for saves
+    // server.on("/list-devices", HTTP_GET, listDevices);
+    // server.on("/rename-device", HTTP_GET, renameDevice);
+    // server.on("/delete", HTTP_GET, deleteScript);
+    // server.on("/read", HTTP_GET, readFile);
+    //
+    // server.on("/rename", HTTP_GET, renameScript);
+    // server.on("/list", HTTP_GET, listScripts);
+    // server.on("/run", HTTP_GET, runScript);
+    // server.on("/save", HTTP_POST, [](auto *v) {
+    // }, nullptr, saveFile);
 }
 
 void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
-    JsonDocument doc;
-
     // Flatten the object into an array for the frontend
     JsonDocument responseDoc;
     JsonArray array = responseDoc.to<JsonArray>();
 
     for (auto &[mac,_]: DeviceManager::getInstance().getConnectedDevices()) {
-        JsonObject device = array.add<JsonObject>();
+        auto device = array.add<JsonObject>();
         device["mac"] = WifiModule::macToString(mac);
         device["name"] = DeviceManager::getInstance().getDeviceNameById(mac); // Use MAC as name if empty
     }
 
-    String output;
-    serializeJson(responseDoc, output);
-    request->send(200, "application/json", output);
+    auto *response = request->beginResponseStream("application/json");
+    serializeJson(responseDoc, *response);
+    request->send(response);
 }
 
 void DovetailEditor::renameDevice(AsyncWebServerRequest *request) {
-    if (!request->hasParam("mac") && request->hasParam("name")) {
+    if (!request->hasParam("mac") || !request->hasParam("name")) {
         request->send(400, "text/plain", "No mac was provided!");
     }
-    {
-        const ClientId mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
-        const String name = request->getParam("name")->value();
 
-        DeviceManager::getInstance().renameDevice(mac, name);
-        xSemaphoreGive(Store::needsSave);
-        // FileSer::dispatch(request, [ ](auto response) {
-        //        //     File root = SD.open("/config.json", FILE_WRITE);
-        //        //
-        //        //     Store::saveRegistryToSD(root);
-        //        //     response->sendSuccess("Renamed file!");
-        //        //     root.close();
-        //        // });erv
-    }
+    const ClientId mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
+    const String name = request->getParam("name")->value();
+
+    DeviceManager::getInstance().renameDevice(mac, name);
+    xSemaphoreGive(Store::needsSave);
+    request->send(200, "text/plain", "OK");
 }
 
 void DovetailEditor::deleteScript(AsyncWebServerRequest *request) {
@@ -125,7 +116,7 @@ void DovetailEditor::deleteScript(AsyncWebServerRequest *request) {
 
     const auto path = std::make_shared<std::string>(
         std::string("/scripts/") + request->getParam("name")->value().c_str());
-    FileServer::dispatch(request, [p = path](auto result) {
+    FileServer::    dispatch(request, [p = path](auto result) {
         auto toDelete = *p.get();
         if (!SD.remove(toDelete.c_str())) {
             result->sendError("Delete Operation Failed");
@@ -137,20 +128,29 @@ void DovetailEditor::deleteScript(AsyncWebServerRequest *request) {
 
 void DovetailEditor::listScripts(AsyncWebServerRequest *request) {
     FileServer::dispatch(request, [](auto response) {
-        String json = "[";
+        JsonDocument doc;
+        JsonArray array = doc.to<JsonArray>();
+
         File root = SD.open("/scripts");
         File file = root.openNextFile();
         while (file) {
             if (Store::isStandardFile(file)) {
-                if (json != "[") json += ",";
-                json += "\"" + String(file.name()) + "\"";
+                (void) array.add(file.name());
             }
+            file.close();
             file = root.openNextFile();
             yield();
         }
         root.close();
-        json += "]";
-        response->sendSuccess(json);
+
+        if (doc.overflowed()) {
+            response->sendError("Too many scripts");
+            return;
+        }
+
+        String json;
+        serializeJson(doc, json);
+        response->sendSuccess(std::move(json));
     });
 }
 
@@ -175,7 +175,7 @@ void DovetailEditor::runScript(AsyncWebServerRequest *request) {
 }
 
 void DovetailEditor::renameScript(AsyncWebServerRequest *request) {
-    if (!request->hasParam("old") && request->hasParam("new")) {
+    if (!request->hasParam("old") && !request->hasParam("new")) {
         request->send(400, "text/plain", "Missing old & new params");
         return;
     }
@@ -203,7 +203,15 @@ void DovetailEditor::readFile(AsyncWebServerRequest *request) {
     }
 
     const auto filename = request->getParam("name")->value();
+    if (!filename) {
+        request->send(400, "text/plain", "Param 'name' missing!");
+        Logger::log("Tried to read a file with no paramater.");
+        return;
+    }
+
+
     const auto path = std::make_shared<std::string>("/scripts/" + std::string(filename.c_str()));
+    SDLock lock;
 
     FileServer::dispatch(request, [v = path](auto result) {
         const auto a = *v.get();
@@ -213,7 +221,7 @@ void DovetailEditor::readFile(AsyncWebServerRequest *request) {
             result->sendError("Could not open / read file!");
             return;
         }
-        result->sendSuccess(std::move(file.readString()));
+        result->sendSuccess(file.readString());
         file.close();
     });
 }

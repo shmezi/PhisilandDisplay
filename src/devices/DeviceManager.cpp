@@ -25,14 +25,9 @@ JsonDocument DeviceManager::serializeDevicesToJson() {
 
         doc[formattedMac]["code"] = code;
 
-        for (auto const &[name, m]: nameToMac) {
-            if (m == mac) {
-                doc[formattedMac]["name"] = name;
-                break;
-            }
-        }
+        doc[formattedMac]["name"] = macToName[mac];
     }
-    return std::move(doc);
+    return doc;
 }
 
 void DeviceManager::loadDevicesToCache(JsonDocument doc) {
@@ -41,12 +36,13 @@ void DeviceManager::loadDevicesToCache(JsonDocument doc) {
 
     for (JsonPair deviceEntry: root) {
         String formattedMac = deviceEntry.key().c_str();
+        const auto mac = WifiModule::parsePrettyMac(formattedMac);
 
-        auto mac = WifiModule::parsePrettyMac(formattedMac);
         JsonObject data = deviceEntry.value();
         String name = data["name"] | "NoName";
+        String code = data["code"] | "default.ezra";
 
-        addDevice(mac, name, data["code"] | "default.ezra");
+        addDevice(mac, name, code);
     }
     Logger::log("Loaded " + String(macToCode.size()) + " devices from SD.");
 }
@@ -114,7 +110,7 @@ void DeviceManager::renameDevice(const ClientId id, const String &newName) {
 }
 
 
-std::map<ClientId, u_int32_t> DeviceManager::getConnectedDevices() {
+const std::map<ClientId, u_int32_t> &DeviceManager::getConnectedDevices() {
     return registeredDeviceMacToClientId;
 }
 
@@ -125,5 +121,3 @@ u_int32_t DeviceManager::getWSClientByMac(const ClientId id) {
 void DeviceManager::registerDevice(const ClientId id, uint32_t wsClientId) {
     registeredDeviceMacToClientId[id] = wsClientId;
 }
-
-

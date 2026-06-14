@@ -17,6 +17,7 @@
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
 #include "widgets/roller/lv_roller.h"
+#include "wsFileServer/WSFileServer.h"
 
 
 struct ClientConfig;
@@ -24,7 +25,6 @@ struct ClientConfig;
 //Hey future confused me, Ezra from 9/06, I haven't checked but I think this needs save is regarding the config file.
 //If it's wrong, just change it's name.. Ezra from the past really should have named stuff better aye?
 SemaphoreHandle_t Store::needsSave;
-
 
 
 void Store::initSD() {
@@ -203,8 +203,6 @@ void Store::resetRegistry() {
 }
 
 
-
-
 String Store::readFileToString(const String &name) {
     SDLock lock;
     if (File file = SD.open("/" + name, FILE_READ)) {
@@ -219,10 +217,13 @@ String Store::readFileToString(const String &name) {
 void storeConfigLoop(void *pvParameters) {
     for (;;) {
         if (xSemaphoreTake(Store::needsSave, portMAX_DELAY) == pdTRUE) {
-            SDLock lock;
-            auto f = SD.open("/config.json",FILE_READ);
             const auto doc = DeviceManager::getInstance().serializeDevicesToJson();
-
+            if (doc.overflowed()) {
+                Logger::error("doc overflow!");
+                return;
+            }
+            SDLock lock;
+            auto f = SD.open("/config.json", FILE_WRITE);
             serializeJson(doc, f);
             f.close();
         }
@@ -238,7 +239,8 @@ void Store::initValuesFromSD() {
 
     loadRegistryFromSD();
     DovetailEditor::cacheWebpageToRAM();
-    FileServer::init();
+    // FileServer::init();
+    WSFileServer::init(DovetailSystem::server);
 }
 
 void Store::cleanupTempFiles() {

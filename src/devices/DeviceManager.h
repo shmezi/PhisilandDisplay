@@ -17,7 +17,8 @@ class DeviceManager {
     std::map<String, ClientId> nameToMac;
     std::map<ClientId, String> macToName;
     std::map<ClientId, String> macToCode;
-    std::map<ClientId, u_int32_t> registeredDeviceMacToClientId; // Mac -> WS Client (Make's sure that we dont end up having fake entries we use mac as key.)
+    std::map<ClientId, u_int32_t> registeredDeviceMacToClientId;
+    // Mac -> WS Client (Make's sure that we dont end up having fake entries we use mac as key.)
 
     DeviceManager() {
         nameToMac = {};
@@ -67,12 +68,11 @@ public:
 
     void renameDevice(ClientId id, const String &newName);
 
-    std::map<ClientId, u_int32_t> getConnectedDevices();
+    const std::map<ClientId, u_int32_t> &getConnectedDevices();
 
     u_int32_t getWSClientByMac(ClientId id);
 
     void registerDevice(ClientId id, uint32_t wsClientId);
-
 };
 
 
