@@ -13,8 +13,7 @@
 #include "DovetailEditor.h"
 #include "WifiModule.h"
 #include "WSCommandHandler.h"
-#include "devices/DeviceManager.h"\
-\
+#include "devices/DeviceManager.h"
 #include "logging/Logger.h"
 #include "logging/Logger.h"
 #include "store/SDLock.h"
@@ -23,7 +22,7 @@
 AsyncDNSServer DovetailSystem::dnsServer;
 
 AsyncWebServer DovetailSystem::server = {80};
-
+std::map<u_int32_t, ClientId> DovetailSystem::registeredMacsToVerify;
 
 void DovetailSystem::verifyDevice(u_int32_t webSocketID, ClientId id) {
     registeredMacsToVerify[webSocketID] = id;
