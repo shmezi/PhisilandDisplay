@@ -10,6 +10,7 @@
 
 #include "FileServer.h"
 #include "SDLock.h"
+#include "devices/DeviceManager.h"
 #include "dovetail/DovetailEditor.h"
 #include "dovetail/DovetailSystem.h"
 #include "dovetail/WifiModule.h"
@@ -20,17 +21,10 @@
 
 struct ClientConfig;
 
-std::map<std::array<uint8_t, 6>, IPAddress> Store::macToIp;
-
-std::map<std::array<uint8_t, 6>, String> Store::macToName;
-std::map<u_int32_t, std::array<uint8_t, 6> > Store::registeredMacsToVerify;
-std::map<std::array<uint8_t, 6>, u_int32_t> Store::registeredDeviceMacToClientId;
-std::map<String, std::array<uint8_t, 6> > Store::nameToMac;
-
-std::map<std::array<uint8_t, 6>, String> Store::macToCode;
 //Hey future confused me, Ezra from 9/06, I haven't checked but I think this needs save is regarding the config file.
 //If it's wrong, just change it's name.. Ezra from the past really should have named stuff better aye?
 SemaphoreHandle_t Store::needsSave;
+
 
 
 void Store::initSD() {
@@ -117,10 +111,10 @@ void Store::registerHoistId(const String &id) {
 ClientConfig Store::loadClientFromVariant(const JsonVariant &clientDocument) {
     const auto device = clientDocument.as<JsonObject>();
 
-    const auto deviceId = device["id"].as<String>();
+    const auto ClientId = device["id"].as<String>();
     const auto deviceDescription = device["description"].as<String>();
     const auto deviceFile = device["file"].as<String>();
-    return {deviceId, deviceDescription, deviceFile};
+    return {ClientId, deviceDescription, deviceFile};
 }
 
 Hoist Store::loadHoistFromDocument(JsonDocument &hoistDocument) {
@@ -170,7 +164,8 @@ void Store::loadHoists() {
 
 void Store::loadRegistryFromSD() {
     getFileOrCreateDefault("config.json", [](File f) {
-        saveRegistryToSD(f);
+        const auto doc = DeviceManager::getInstance().serializeDevicesToJson();
+        serializeJson(doc, f);
         return true;
     });
 
@@ -191,26 +186,7 @@ void Store::loadRegistryFromSD() {
         return;
     }
 
-    // Clear current RAM maps to prevent data duplication/stale entries
-    macToName.clear();
-    macToCode.clear();
-
-    JsonObject root = doc.as<JsonObject>();
-    for (JsonPair p: root) {
-        String formattedMac = p.key().c_str();
-
-        auto mac = WifiModule::parsePrettyMac(formattedMac);
-        JsonObject data = p.value();
-
-        macToCode[mac] = data["code"] | "default.ezra";
-
-
-        // Build nameToMac Map (Name is Key, MAC is Value)
-        String name = data["name"] | "NoName";
-        macToName[mac] = name;
-        nameToMac[name] = mac;
-    }
-    Logger::log("Loaded " + String(macToCode.size()) + " devices from SD.");
+    DeviceManager::getInstance().loadDevicesToCache(doc);
 }
 
 void Store::ensureDeleted(const String &name) {
@@ -222,38 +198,12 @@ void Store::ensureDeleted(const String &name) {
 
 void Store::resetRegistry() {
     ensureDeleted("config.json");
-    macToCode.clear();
-    macToIp.clear();
-    macToName.clear();
-    nameToMac.clear();
+    DeviceManager::getInstance().clearDeviceCache();
     loadRegistryFromSD();
 }
 
-void Store::saveRegistryToSD(File &file) {
-    JsonDocument doc;
 
-    for (auto const &[mac, code]: macToCode) {
-        auto formattedMac = WifiModule::macToString(mac);
 
-        doc[formattedMac]["code"] = code;
-
-        // Check if this MAC also has a nickname in nameToMac
-        // We iterate through nameToMac to find the matching MAC
-        for (auto const &[m, name]: macToName) {
-            if (m == mac) {
-                doc[formattedMac]["name"] = name;
-                break;
-            }
-        }
-    }
-    serializeJson(doc, file);
-}
-
-String Store::getScriptFilePathByMac(const std::array<uint8_t, 6> &mac) {
-    auto assignedScriptToMac = macToCode.find(mac);
-    auto macHasAssignedCodebase = assignedScriptToMac != macToCode.end();
-    return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "waterslide.ezra");
-}
 
 String Store::readFileToString(const String &name) {
     SDLock lock;
@@ -271,7 +221,9 @@ void storeConfigLoop(void *pvParameters) {
         if (xSemaphoreTake(Store::needsSave, portMAX_DELAY) == pdTRUE) {
             SDLock lock;
             auto f = SD.open("/config.json",FILE_READ);
-            Store::saveRegistryToSD(f);
+            const auto doc = DeviceManager::getInstance().serializeDevicesToJson();
+
+            serializeJson(doc, f);
             f.close();
         }
     }

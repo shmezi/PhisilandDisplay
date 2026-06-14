@@ -4,6 +4,8 @@
 
 #include "RegisterCommand.h"
 
+#include "devices/DeviceManager.h"
+#include "dovetail/DovetailSystem.h"
 #include "dovetail/WifiModule.h"
 #include "logging/Logger.h"
 #include "store/Store.h"
@@ -15,5 +17,5 @@ String RegisterCommand::name() {
 void RegisterCommand::execute(const uint8_t &wsClientID, JsonDocument doc) {
     const auto mac = String(doc["mac"]);
     Logger::log("Mac attempted to register: " + mac);
-    Store::registeredMacsToVerify[wsClientID] = WifiModule::parsePrettyMac(mac);
+    DovetailSystem::verifyDevice(wsClientID, WifiModule::parsePrettyMac(mac));
 }

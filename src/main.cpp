@@ -5,6 +5,7 @@
 #include <esp_task_wdt.h>
 
 #include "Version.h"
+#include "devices/DeviceManager.h"
 #include "display/Display.h"
 #include "dovetail/DovetailSystem.h"
 #include "dovetail/WifiModule.h"
@@ -62,10 +63,10 @@ void setup() {
     Display::innit();
 
 
-    const auto codeBaseNameWithExtension = DovetailSystem::getCodeBaseForId("core");
+    const auto codeBaseNameWithExtension = DeviceManager::getInstance().getCodeBaseForId("core");
     const auto codeBaseName = codeBaseNameWithExtension.substring(0, codeBaseNameWithExtension.length() - 5);
 
-    lv_label_set_text(ui_DeviceId, ("Connecting to: " + codeBaseName).c_str());
+    lv_label_set_text(ui_ClientId, ("Connecting to: " + codeBaseName).c_str());
 
 
     const auto ssid = "SSID: " + WifiModule::ssid;

@@ -15,6 +15,7 @@
 #include "commands/RegisterCommand.h"
 #include "commands/RemoteLogCommand.h"
 #include "commands/SwitchScreenCommand.h"
+#include "devices/DeviceManager.h"
 #include "logging/Logger.h"
 #include "store/Store.h"
 std::map<String, std::unique_ptr<Command> > WSCommandHandler::commands;
@@ -41,11 +42,11 @@ void WSCommandHandler::registerCommand(std::unique_ptr<Command> command) {
 }
 
 
-
-void WSCommandHandler::startEvent(String client, String eventId, int param) {
-    std::string id = {eventId.c_str()};
-    sendCommand(Store::nameToMac[client], "event", [id, param](JsonDocument &doc) {
-        doc["id"] = id;
+void WSCommandHandler::startEvent(const String &client, const String &eventId, int param) {
+    std::string c_eventId = {eventId.c_str()};
+    const auto clientId = DeviceManager::getInstance().getDeviceIdByName(client);
+    sendCommand(clientId, "event", [c_eventId, param](JsonDocument &doc) {
+        doc["id"] = c_eventId;
         doc["value"] = param;
     });
 }

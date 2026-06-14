@@ -24,25 +24,23 @@ public:
     static void registerCommand(std::unique_ptr<Command> command);
 
     template<class F>
-    static void sendCommand(const std::array<uint8_t, 6> &mac, std::string command, F changes);
+    static void sendCommand(const ClientId &mac, std::string command, F changes);
 
-    static void startEvent(String client, String eventId, int param);
+    static void startEvent(const String &client, const String &eventId, int param);
 
     static void registerAllInternalCommands();
 };
 
 template<typename F>
-void WSCommandHandler::sendCommand(const std::array<uint8_t, 6> &mac, std::string command, F changes) {
+void WSCommandHandler::sendCommand(const ClientId &mac, std::string command, F changes) {
     JsonDocument doc;
 
     doc["command"] = command;
     changes(doc);
     String serialized;
     serializeJson(doc, serialized);
-    AsyncWebSocketClient *client = DovetailSystem::ws.client(Store::registeredDeviceMacToClientId[mac]);
-    if (client && client->status() == WS_CONNECTED) {
+    if (AsyncWebSocketClient *client = DovetailSystem::getWSClientByMac(mac))
         client->text(serialized);
-    }
 }
 
 #endif //PHISILANDDISPLAY_WSCOMMANDHANDLER_H

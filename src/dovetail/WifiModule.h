@@ -7,6 +7,8 @@
 #include <WiFiGeneric.h>
 #include <WString.h>
 
+#include "devices/ClientId.h"
+
 
 class WifiModule {
     static void initWifiName();
@@ -16,13 +18,13 @@ public:
 
     static void startWifi();
 
-    static std::string macToString(const std::array<uint8_t, 6> &mac);
+    static std::string macToString(const ClientId &mac);
 
-    static std::array<uint8_t, 6> parsePrettyMac(const String &macStr);
+    static ClientId parsePrettyMac(const String &macStr);
 
     static void updateDeviceCount();
 
-    static void kickUserByMac(std::array<uint8_t, 6> mac);
+    static void kickUserByMac(ClientId mac);
 
     static String ssid;
 };

@@ -13,23 +13,30 @@
 #include "DovetailEditor.h"
 #include "WifiModule.h"
 #include "WSCommandHandler.h"
-#include "game/Game.h"
-#include "hoist/HoistSystem.h"
+#include "devices/DeviceManager.h"\
+\
 #include "logging/Logger.h"
-#include "store/FileServer.h"
+#include "logging/Logger.h"
 #include "store/SDLock.h"
 #include "store/Store.h"
-
-String DovetailSystem::getCodeBaseForId(const String &id) {
-    const auto mac = Store::nameToMac[id];
-    const auto codeBase = Store::macToCode[mac];
-    return codeBase;
-}
-
 
 AsyncDNSServer DovetailSystem::dnsServer;
 
 AsyncWebServer DovetailSystem::server = {80};
+
+
+void DovetailSystem::verifyDevice(u_int32_t webSocketID, ClientId id) {
+    registeredMacsToVerify[webSocketID] = id;
+}
+
+AsyncWebSocketClient *DovetailSystem::getWSClientByMac(ClientId mac) {
+    AsyncWebSocketClient *client = ws.client(DeviceManager::getInstance().getWSClientByMac(mac));
+    if (client && client->status() == WS_CONNECTED) {
+        return client;
+    }
+    return nullptr;
+}
+
 AsyncWebSocket DovetailSystem::ws("/ws");
 
 
@@ -77,7 +84,7 @@ void DovetailSystem::code(AsyncWebServerRequest *request) {
         return;
     }
     const auto mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
-    const auto scriptFile = Store::getScriptFilePathByMac(mac);
+    const auto scriptFile = DeviceManager::getInstance().getScriptFilePathByMac(mac);
 
     SDLock lock;
     request->send(SD, scriptFile, "text/plain");
@@ -89,10 +96,11 @@ void DovetailSystem::defineRoutes() {
 }
 
 void DovetailSystem::macVerificationLoop() {
-    while (!Store::registeredMacsToVerify.empty()) {
-        auto &[clientId,mac] = *Store::registeredMacsToVerify.begin();
+    while (!registeredMacsToVerify.empty()) {
+        auto &[clientId,mac] = *registeredMacsToVerify.begin();
         JsonDocument doc;
-        const auto isAllowedOnNetwork = Store::macToCode.find(mac) != Store::macToCode.end();
+        const auto isAllowedOnNetwork = DeviceManager::getInstance().canJoinNetwork(mac);
+
         doc["command"] = isAllowedOnNetwork ? "register_success" : "register_failure";
         Logger::log(
             String("Mac: ") +
@@ -109,13 +117,10 @@ void DovetailSystem::macVerificationLoop() {
         if (AsyncWebSocketClient *client = ws.client(clientId); client && client->status() == WS_CONNECTED)
             client->text(messageContentToSend);
         if (isAllowedOnNetwork)
-            Store::registeredDeviceMacToClientId[mac] = clientId;
-        Store::registeredMacsToVerify
-                .
-                erase(Store::registeredMacsToVerify.begin());
+            DeviceManager::getInstance().registerDevice(mac, clientId);
+        registeredMacsToVerify.erase(registeredMacsToVerify.begin());
     }
 }
-
 
 
 void DovetailSystem::init() {
@@ -128,8 +133,9 @@ void DovetailSystem::init() {
 }
 
 void DovetailSystem::resetAllDevices() {
-    for (auto &[name,mac]: Store::nameToMac) {
-        // sendMessage(name_to_mac.second, "reset");
+    for (auto &[mac,_]: DeviceManager::getInstance().getConnectedDevices()) {
+        WSCommandHandler::sendCommand(mac, "script", [](auto _) {
+        });
     }
 }
 

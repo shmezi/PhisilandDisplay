@@ -52,7 +52,7 @@ void HoistingProcess::matchRollerToDevices() const {
     String options = "";
     for (auto &device: hoist.devices) {
         options += "\n"; //We anyway want the first element to be blank.
-        options += device.deviceId;
+        options += device.ClientId;
     }
     lv_roller_set_options(ui_DevicesToPair, options.c_str(), LV_ROLLER_MODE_NORMAL);
 }

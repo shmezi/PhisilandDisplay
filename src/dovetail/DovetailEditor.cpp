@@ -11,7 +11,7 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 
-
+#include "devices/ClientId.h"
 #include <map>
 #include <SD.h>
 
@@ -23,6 +23,7 @@
 #include <SD.h>
 
 #include "WSCommandHandler.h"
+#include "devices/DeviceManager.h"
 #include "store/FileServer.h"
 #include "store/SDLock.h"
 std::vector<uint8_t> DovetailEditor::htmlBuffer;
@@ -85,13 +86,10 @@ void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
     JsonDocument responseDoc;
     JsonArray array = responseDoc.to<JsonArray>();
 
-    for (auto &v: Store::registeredDeviceMacToClientId) {
-        auto &mac = v.first;
-        auto &ip = v.second;
+    for (auto &[mac,_]: DeviceManager::getInstance().getConnectedDevices()) {
         JsonObject device = array.add<JsonObject>();
         device["mac"] = WifiModule::macToString(mac);
-        device["ip"] = ip;
-        device["name"] = Store::macToName[mac]; // Use MAC as name if empty
+        device["name"] = DeviceManager::getInstance().getDeviceNameById(mac); // Use MAC as name if empty
     }
 
     String output;
@@ -100,18 +98,22 @@ void DovetailEditor::listDevices(AsyncWebServerRequest *request) {
 }
 
 void DovetailEditor::renameDevice(AsyncWebServerRequest *request) {
-    if (request->hasParam("mac") && request->hasParam("name")) {
-        std::array<uint8_t, 6> mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
-        String name = request->getParam("name")->value();
-        Store::macToName[mac] = name;
-        Store::nameToMac[name] = mac;
-        FileServer::dispatch(request, [ ](auto response) {
-            File root = SD.open("/config.json", FILE_WRITE);
+    if (!request->hasParam("mac") && request->hasParam("name")) {
+        request->send(400, "text/plain", "No mac was provided!");
+    }
+    {
+        const ClientId mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
+        const String name = request->getParam("name")->value();
 
-            Store::saveRegistryToSD(root);
-            response->sendSuccess("Renamed file!");
-            root.close();
-        });
+        DeviceManager::getInstance().renameDevice(mac, name);
+        xSemaphoreGive(Store::needsSave);
+        // FileSer::dispatch(request, [ ](auto response) {
+        //        //     File root = SD.open("/config.json", FILE_WRITE);
+        //        //
+        //        //     Store::saveRegistryToSD(root);
+        //        //     response->sendSuccess("Renamed file!");
+        //        //     root.close();
+        //        // });erv
     }
 }
 
@@ -156,20 +158,12 @@ void DovetailEditor::runScript(AsyncWebServerRequest *request) {
     if (request->hasParam("name") && request->hasParam("mac")) {
         String filename = request->getParam("name")->value();
         const auto formattedMac = request->getParam("mac")->value();
-        std::array<uint8_t, 6> deviceMac = WifiModule::parsePrettyMac(formattedMac);
+        ClientId deviceMac = WifiModule::parsePrettyMac(formattedMac);
 
-        Logger::log(
-            "Running for device '" + formattedMac + "' with " + String(Store::macToIp.count(deviceMac)));
+        Logger::log("Script has been sent to device with id '" + formattedMac + "'");
 
-        // 2. Lookup the IP for this specific device
-        // If you are using a std::map<String, IPAddress> macToIp:
-        if (Store::registeredDeviceMacToClientId.count(deviceMac)) {
-            // IPAddress targetIP = macToIp[deviceId];
-
-            // 3. Send the message to the specific device
-            // Assuming sendMessage handles the IP routing
-            // DovetailSystem::sendMessage(deviceId, "reset"); TODO: RESET
-            Store::macToCode[deviceMac] = filename;
+        if (DeviceManager::getInstance().isRegistered(deviceMac)) {
+            DeviceManager::getInstance().assignCodeBaseToDevice(deviceMac, filename);
             xSemaphoreGive(Store::needsSave);
             WSCommandHandler::sendCommand(deviceMac, "script", [](auto _) {
             });

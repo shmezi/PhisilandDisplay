@@ -7,7 +7,7 @@
 #include <set>
 #include <Arduino.h>
 #include <SD.h>
-
+#include "devices/ClientId.h"
 #include <map>
 #include <bits/stl_vector.h>
 #include <ArduinoJson.h>
@@ -17,19 +17,8 @@
 
 class Store {
 public:
-    static std::map<u_int32_t, std::array<uint8_t, 6> > registeredMacsToVerify;
-
-    static std::map<std::array<uint8_t, 6>, IPAddress> macToIp;
-
-    static std::map<std::array<uint8_t, 6>, String> macToName;
-
-    static std::map<String, std::array<uint8_t, 6> > nameToMac;
-
-    static std::map<std::array<uint8_t, 6>, String> macToCode;
-
     static SemaphoreHandle_t needsSave;
 
-    static std::map<std::array<uint8_t, 6>, u_int32_t> registeredDeviceMacToClientId;
 
     static void initSD();
 
@@ -44,9 +33,9 @@ public:
 
     static void registerHoistId(const String &id);
 
-    static ClientConfig loadClientFromVariant(const ArduinoJson::JsonVariant &clientDocument);
+    static ClientConfig loadClientFromVariant(const JsonVariant &clientDocument);
 
-    static Hoist loadHoistFromDocument(ArduinoJson::JsonDocument &hoistDocument);
+    static Hoist loadHoistFromDocument(JsonDocument &hoistDocument);
 
     static void loadHoists();
 
@@ -56,9 +45,7 @@ public:
 
     static void resetRegistry();
 
-    static void saveRegistryToSD(File &file);
 
-    static String getScriptFilePathByMac(const std::array<uint8_t, 6> &mac);
 
     static String readFileToString(const String &name);
 
