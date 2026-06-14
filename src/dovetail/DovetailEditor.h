@@ -8,6 +8,7 @@
 
 
 class DovetailEditor {
+    static std::vector<uint8_t> htmlBuffer;
 
 public:
     static void initEditorRoutes();
@@ -18,16 +19,18 @@ public:
 
     static void renameDevice(AsyncWebServerRequest *request);
 
-    static void deleteDevice(AsyncWebServerRequest *request);
+    static void deleteScript(AsyncWebServerRequest *request);
 
-    static void renameFile(AsyncWebServerRequest *request);
+    static void renameScript(AsyncWebServerRequest *request);
 
     static void saveFile(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
 
 
-    static void listFiles(AsyncWebServerRequest *request);
+    static void listScripts(AsyncWebServerRequest *request);
 
-    static void runFile(AsyncWebServerRequest *request);
+    static void runScript(AsyncWebServerRequest *request);
+
+    static bool cacheWebpageToRAM();
 
     static void webpage(AsyncWebServerRequest *request);
 };

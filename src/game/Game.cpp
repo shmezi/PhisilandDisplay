@@ -15,6 +15,7 @@
 
 #include "lv_api_map_v8.h"
 #include "dovetail/DovetailSystem.h"
+#include "dovetail/WSCommandHandler.h"
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
 
@@ -33,22 +34,27 @@ void Game::onResetButton(lv_event_t *e) {
 void Game::onStartButton(lv_event_t *e) {
     shouldSwitchScreen = true;
     if (screen == "blackmamba") {
-        // DovetailSystem::sendMessageToClient("core", "event?val=1"); //TODO: ADD BACK!
+        WSCommandHandler::startEvent("core", "start", 0);
+        // DovetailSystem::sendMessageToClient("core", "event?val=1");
         return;
     }
     if (!(lv_obj_has_state(ui_StartStop4, LV_STATE_CHECKED) || lv_obj_has_state(ui_StartStop1, LV_STATE_CHECKED) ||
           lv_obj_has_state(ui_StartStop2, LV_STATE_CHECKED))) {
-        Serial.print("~-1");
+        WSCommandHandler::startEvent("core", "stop", 0);
 
-        // DovetailSystem::sendMessageToClient("core", "event?val=-1"); //TODO: ADD BACK!
+        // DovetailSystem::sendMessageToClient("core", "event?val=-1"); //
         return;
     }
 
-    // if (screen == "swings")
-        // DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl1))); //TODO: ADD BACK!
+    if (screen == "swings")
+        WSCommandHandler::startEvent("core", "start", lv_arc_get_value(ui_SpeedControl1));
 
-    // if (screen == "ferriswheel")
-        // DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl3))); //TODO: ADD BACK!
+    // DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl1)));
+
+    if (screen == "ferriswheel")
+        WSCommandHandler::startEvent("core", "start", lv_arc_get_value(ui_SpeedControl3));
+
+    // DovetailSystem::sendMessageToClient("core", "event?val=" + String(lv_arc_get_value(ui_SpeedControl3))); //TODO: ADD BACK!
 }
 
 bool Game::shouldSwitchScreen = false;

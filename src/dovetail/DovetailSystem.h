@@ -8,6 +8,7 @@
 #include <map>
 
 #include "ESPAsyncWebServer.h"
+#include "devices/ClientId.h"
 #include "libs/asyncdns/ESPAsyncDNSServer.h"
 
 struct FileWritePacket {
@@ -19,21 +20,28 @@ struct FileWritePacket {
 
 
 class DovetailSystem {
-    static void kickUserWithMac(const String &macToEvict);
-
-
-    static std::vector<String> registeredMacsToVerify;
-
 public:
     static AsyncDNSServer dnsServer;
     static AsyncWebServer server;
 
-    static String getCodeBaseForId(const String &id);
+    static void verifyDevice(u_int32_t webSocketID, ClientId id);
 
+    static AsyncWebSocketClient *getWSClientByMac(ClientId);
+
+    static std::map<u_int32_t, ClientId> registeredMacsToVerify;
+
+
+    static AsyncWebSocket ws;
+
+
+    static void notFound404(AsyncWebServerRequest *request);
+
+    static void code(AsyncWebServerRequest *request);
 
     static void defineRoutes();
 
-    static void connectionLoop();
+    static void macVerificationLoop();
+
 
     static void init();
 

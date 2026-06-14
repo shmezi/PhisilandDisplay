@@ -16,6 +16,8 @@ public:
     static void warn(const String &contents);
 
     static void error(const String &contents);
+
+    static void remoteLog(const String &contents);
 };
 
 

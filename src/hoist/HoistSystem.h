@@ -13,7 +13,7 @@
  * Configuration for an individual config.
  */
 struct ClientConfig {
-    String deviceId;
+    String ClientId;
     String description;
     String file;
 };

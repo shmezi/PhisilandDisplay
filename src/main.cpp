@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 
+#include "Version.h"
+#include "devices/DeviceManager.h"
 #include "display/Display.h"
 #include "dovetail/DovetailSystem.h"
 #include "dovetail/WifiModule.h"
@@ -44,21 +46,27 @@ void connectBT(lv_event_t *e) {
 }
 }
 
+void startup() {
+    Logger::log("PhisilandDisplay version: " + VERSION);
+    Logger::log("PhisiDisplay - (c) Created and developed by Ezra Golombek all rights reserved.");
+    Logger::log("© Developed and designed by Ezra Golombek 2026");
+}
 
 void setup() {
     Serial.begin(115200);
     esp_task_wdt_init(5, true);
     Logger::innitLogger();
+    startup();
     Store::initValuesFromSD();
 
     DovetailSystem::init();
     Display::innit();
 
 
-    const auto codeBaseNameWithExtension = DovetailSystem::getCodeBaseForId("core");
+    const auto codeBaseNameWithExtension = DeviceManager::getInstance().getCodeBaseForId("core");
     const auto codeBaseName = codeBaseNameWithExtension.substring(0, codeBaseNameWithExtension.length() - 5);
 
-    lv_label_set_text(ui_DeviceId, ("Connecting to: " + codeBaseName).c_str());
+    lv_label_set_text(ui_ClientId, ("Connecting to: " + codeBaseName).c_str());
 
 
     const auto ssid = "SSID: " + WifiModule::ssid;
@@ -74,13 +82,16 @@ char receivedChars[64]; // Buffer to store the received data
 void loop() {
     Display::lvglTask();
     Game::setCurrentScreen();
+    DovetailSystem::macVerificationLoop();
     Game::updateValues();
     HoistSystem::hoistLoop();
     WifiModule::updateDeviceCount();
+    DovetailSystem::ws.cleanupClients();
     if (Game::shouldEndActivity) {
         Game::endRound();
         Game::shouldEndActivity = false;
     }
+
     // DovetailSystem::server.handleClient();
     delay(5);
 }

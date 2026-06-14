@@ -7,7 +7,7 @@
 #include <set>
 #include <Arduino.h>
 #include <SD.h>
-
+#include "devices/ClientId.h"
 #include <map>
 #include <bits/stl_vector.h>
 #include <ArduinoJson.h>
@@ -17,26 +17,15 @@
 
 class Store {
 public:
+    static SemaphoreHandle_t needsSave;
 
-    static std::vector<String> registeredMacsToVerify;
-
-    static std::map<String, IPAddress> macToIp;
-
-    static std::map<String, String> macToName;
-
-    static std::map<String, String> nameToMac;
-
-    static std::map<String, String> macToCode;
-
-    static bool needsSave;
 
     static void initSD();
 
-    static QueueHandle_t sdQueue;
 
     static bool ensureFileExists(const String &name);
 
-    static bool getFileOrCreateDefault(const String &name, const std::function<bool(File &file)>& defaultValue);
+    static bool getFileOrCreateDefault(const String &name, const std::function<bool(File &file)> &defaultValue);
 
     static bool isStandardFile(File &file);
 
@@ -44,9 +33,9 @@ public:
 
     static void registerHoistId(const String &id);
 
-    static ClientConfig loadClientFromVariant(const ArduinoJson::JsonVariant &clientDocument);
+    static ClientConfig loadClientFromVariant(const JsonVariant &clientDocument);
 
-    static Hoist loadHoistFromDocument(ArduinoJson::JsonDocument &hoistDocument);
+    static Hoist loadHoistFromDocument(JsonDocument &hoistDocument);
 
     static void loadHoists();
 
@@ -56,9 +45,7 @@ public:
 
     static void resetRegistry();
 
-    static void saveRegistryToSD(File &file);
 
-    static String getScriptFilePathByMac(const String&);
 
     static String readFileToString(const String &name);
 

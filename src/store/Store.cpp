@@ -8,23 +8,23 @@
 #include <SD.h>
 #include <set>
 
+#include "FileServer.h"
+#include "SDLock.h"
+#include "devices/DeviceManager.h"
+#include "dovetail/DovetailEditor.h"
 #include "dovetail/DovetailSystem.h"
+#include "dovetail/WifiModule.h"
 #include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
 #include "widgets/roller/lv_roller.h"
+#include "wsFileServer/WSFileServer.h"
 
 
 struct ClientConfig;
-std::map<String, IPAddress> Store::macToIp;
 
-std::map<String, String> Store::macToName;
-
-std::map<String, String> Store::nameToMac;
-
-
-std::map<String, String> Store::macToCode;
-
-bool Store::needsSave = false;
+//Hey future confused me, Ezra from 9/06, I haven't checked but I think this needs save is regarding the config file.
+//If it's wrong, just change it's name.. Ezra from the past really should have named stuff better aye?
+SemaphoreHandle_t Store::needsSave;
 
 
 void Store::initSD() {
@@ -33,25 +33,9 @@ void Store::initSD() {
     Logger::log("Card initialized.");
 }
 
-QueueHandle_t Store::sdQueue;
-// Background Task for SD Writing
-void sdWorkerTask(void *pvParameters) {
-    FileWritePacket packet{};
-    for (;;) {
-        // Wait indefinitely for a packet from the queue
-        if (xQueueReceive(Store::sdQueue, &packet, portMAX_DELAY)) {
-            File f = SD.open(packet.path, packet.isFirst ? FILE_WRITE : FILE_APPEND);
-            if (f) {
-                f.write(packet.data, packet.len);
-                f.close();
-            }
-            // CRITICAL: Free the memory we allocated in the callback
-            free(packet.data);
-        }
-    }
-}
 
 String readScriptFileToString(const String &path) {
+    SDLock lock;
     File script = SD.open("/" + path + ".ezra");
     if (!script) {
         Logger::error("Failed to open " + path + " script.");
@@ -72,6 +56,7 @@ String readScriptFileToString(const String &path) {
 }
 
 bool Store::ensureFileExists(const String &name) {
+    SDLock lock;
     if (SD.exists("/" + name)) return true;
     if (name.indexOf('.') == -1) {
         SD.mkdir("/" + name);
@@ -88,6 +73,7 @@ bool Store::ensureFileExists(const String &name) {
 }
 
 bool Store::getFileOrCreateDefault(const String &name, const std::function<bool(File &file)> &defaultValue) {
+    SDLock lock;
     if (SD.exists("/" + name)) return true;
     Logger::log(name + " not found. Initializing empty file.");
     File file = SD.open("/" + name, FILE_WRITE);
@@ -125,10 +111,10 @@ void Store::registerHoistId(const String &id) {
 ClientConfig Store::loadClientFromVariant(const JsonVariant &clientDocument) {
     const auto device = clientDocument.as<JsonObject>();
 
-    const auto deviceId = device["id"].as<String>();
+    const auto ClientId = device["id"].as<String>();
     const auto deviceDescription = device["description"].as<String>();
     const auto deviceFile = device["file"].as<String>();
-    return {deviceId, deviceDescription, deviceFile};
+    return {ClientId, deviceDescription, deviceFile};
 }
 
 Hoist Store::loadHoistFromDocument(JsonDocument &hoistDocument) {
@@ -145,6 +131,7 @@ Hoist Store::loadHoistFromDocument(JsonDocument &hoistDocument) {
 }
 
 void Store::loadHoists() {
+    SDLock lock;
     hoistEntriesForHoistSelection = "";
     auto hoistsDirectory = SD.open("/hoists");
 
@@ -158,6 +145,7 @@ void Store::loadHoists() {
 
         JsonDocument hoistDocument;
         DeserializationError error = deserializeJson(hoistDocument, hoistFile);
+        hoistFile.close();
         if (error) {
             Logger::error("Error reading hoist file: '" + String(hoistFile.name()) + "'!");
             continue;
@@ -176,10 +164,12 @@ void Store::loadHoists() {
 
 void Store::loadRegistryFromSD() {
     getFileOrCreateDefault("config.json", [](File f) {
-        saveRegistryToSD(f);
+        const auto doc = DeviceManager::getInstance().serializeDevicesToJson();
+        serializeJson(doc, f);
         return true;
     });
 
+    SDLock lock;
 
     File file = SD.open("/config.json", FILE_READ);
     if (file.size() == 0) {
@@ -196,27 +186,11 @@ void Store::loadRegistryFromSD() {
         return;
     }
 
-    // Clear current RAM maps to prevent data duplication/stale entries
-    macToName.clear();
-    macToCode.clear();
-
-    JsonObject root = doc.as<JsonObject>();
-    for (JsonPair p: root) {
-        String mac = p.key().c_str();
-        JsonObject data = p.value();
-
-        macToCode[mac] = data["code"] | "default.ezra";
-
-
-        // Build nameToMac Map (Name is Key, MAC is Value)
-        String name = data["name"] | "NoName";
-        macToName[mac] = name;
-        nameToMac[name] = mac;
-    }
-    Logger::log("Loaded " + String(macToCode.size()) + " devices from SD.");
+    DeviceManager::getInstance().loadDevicesToCache(doc);
 }
 
 void Store::ensureDeleted(const String &name) {
+    SDLock lock;
     if (SD.exists(name)) {
         SD.remove(name);
     }
@@ -224,41 +198,13 @@ void Store::ensureDeleted(const String &name) {
 
 void Store::resetRegistry() {
     ensureDeleted("config.json");
-    macToCode.clear();
-    macToIp.clear();
-    macToName.clear();
-    nameToMac.clear();
+    DeviceManager::getInstance().clearDeviceCache();
     loadRegistryFromSD();
 }
 
-void Store::saveRegistryToSD(File &file) {
-    if (!needsSave) return;
-    JsonDocument doc;
-
-    for (auto const &[mac, code]: macToCode) {
-        doc[mac]["code"] = code;
-
-        // Check if this MAC also has a nickname in nameToMac
-        // We iterate through nameToMac to find the matching MAC
-        for (auto const &[m, name]: macToName) {
-            if (m == mac) {
-                doc[mac]["name"] = name;
-                break;
-            }
-        }
-    }
-    serializeJson(doc, file);
-
-    needsSave = false;
-}
-
-String Store::getScriptFilePathByMac(const String &mac) {
-    auto assignedScriptToMac = macToCode.find(mac);
-    auto macHasAssignedCodebase = assignedScriptToMac != macToCode.end();
-    return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "waterslide.ezra");
-}
 
 String Store::readFileToString(const String &name) {
+    SDLock lock;
     if (File file = SD.open("/" + name, FILE_READ)) {
         const auto fileContents = file.readString();
         file.close();
@@ -268,17 +214,37 @@ String Store::readFileToString(const String &name) {
 }
 
 
+void storeConfigLoop(void *pvParameters) {
+    for (;;) {
+        if (xSemaphoreTake(Store::needsSave, portMAX_DELAY) == pdTRUE) {
+            const auto doc = DeviceManager::getInstance().serializeDevicesToJson();
+            if (doc.overflowed()) {
+                Logger::error("doc overflow!");
+                return;
+            }
+            SDLock lock;
+            auto f = SD.open("/config.json", FILE_WRITE);
+            serializeJson(doc, f);
+            f.close();
+        }
+    }
+}
+
 void Store::initValuesFromSD() {
+    needsSave = xSemaphoreCreateBinary();
     initSD();
     ensureFileExists("scripts");
     ensureFileExists("hoists");
+    xTaskCreatePinnedToCore(storeConfigLoop, "needingSave", 4096, nullptr, 1, nullptr, 0);
 
-    sdQueue = xQueueCreate(60, sizeof(FileWritePacket));
-
-    xTaskCreatePinnedToCore(sdWorkerTask, "sdWorker", 4096, nullptr, 1, nullptr, 0);
+    loadRegistryFromSD();
+    DovetailEditor::cacheWebpageToRAM();
+    // FileServer::init();
+    WSFileServer::init(DovetailSystem::server);
 }
 
 void Store::cleanupTempFiles() {
+    SDLock lock;
     File root = SD.open("/scripts");
     File f = root.openNextFile();
     while (f) {

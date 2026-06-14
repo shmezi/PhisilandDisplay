@@ -25,3 +25,8 @@ void Logger::warn(const String &contents) {
 void Logger::error(const String &contents) {
     Serial.println(apply(Color::BOLD) + apply(Color::RED) +"[ERROR] "  + apply(Color::RESET) + apply(Color::BRIGHT_WHITE)+ contents);
 }
+
+void Logger::remoteLog(const String &contents) {
+    Serial.println(apply(Color::BOLD) + apply(Color::GREEN) + "[CLIENT] " + apply(Color::RESET) + apply(Color::BRIGHT_WHITE) + contents);
+
+}

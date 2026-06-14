@@ -40,8 +40,7 @@ namespace {
         domainName.replace("www.", "");
     }
 
-    String
-    getDomainNameWithoutWwwPrefix(unsigned char *start) {
+    String getDomainNameWithoutWwwPrefix(const unsigned char *start) {
         String parsedDomainName = "";
         if (start == nullptr || *start == 0)
             return parsedDomainName;
@@ -85,7 +84,6 @@ AsyncDNSServer::start(const uint16_t port, const String &domainName,
             [&](AsyncUDPPacket &packet) {
                 this->processRequest(packet);
                 vTaskDelay(pdMS_TO_TICKS(10));
-
             }
         );
         return true;
@@ -135,13 +133,15 @@ void
 AsyncDNSServer::replyWithIP(AsyncUDPPacket &packet) {
     AsyncUDPMessage msg(packet.length() + 12 + sizeof(_resolvedIP));
     //6 bytes below + szeof(ttl) + 2 bytes. Precalculate to avoid using default of 1460, which is way too much
-
     msg.write(packet.data(), packet.length());
-    DNSHeader *_dnsHeader = (DNSHeader *) msg.data();
 
-    _dnsHeader->QR = DNS_QR_RESPONSE;
-    _dnsHeader->ANCount = _dnsHeader->QDCount;
-    _dnsHeader->QDCount = _dnsHeader->QDCount;
+
+    DNSHeader dnsHeader;
+    memcpy(&dnsHeader, msg.data(), sizeof(DNSHeader));
+    dnsHeader.QR = DNS_QR_RESPONSE;
+    dnsHeader.ANCount = dnsHeader.QDCount;
+    memcpy(msg.data(), &dnsHeader, sizeof(DNSHeader));
+
     //_dnsHeader->RA = 1;
 
     msg.write((uint8_t) 192); //  answer name is a pointer
@@ -180,13 +180,16 @@ AsyncDNSServer::replyWithIP(AsyncUDPPacket &packet) {
 void
 AsyncDNSServer::replyWithCustomCode(AsyncUDPPacket &packet) {
     AsyncUDPMessage msg(packet.length());
-
     msg.write(packet.data(), packet.length());
-    DNSHeader *_dnsHeader = (DNSHeader *) msg.data();
 
-    _dnsHeader->QR = DNS_QR_RESPONSE;
-    _dnsHeader->RCode = (unsigned char) _errorReplyCode; //default is AsyncDNSReplyCode::NonExistentDomain
-    _dnsHeader->QDCount = 0;
+    DNSHeader dnsHeader;
+    memcpy(&dnsHeader, msg.data(), sizeof(DNSHeader));
+
+
+    dnsHeader.QR = DNS_QR_RESPONSE;
+    dnsHeader.RCode = (unsigned char) _errorReplyCode; //default is AsyncDNSReplyCode::NonExistentDomain
+    dnsHeader.QDCount = 0;
+    memcpy(msg.data(), &dnsHeader, sizeof(DNSHeader));
 
     packet.send(msg);
 }

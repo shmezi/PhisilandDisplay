@@ -12,143 +12,129 @@
 
 #include "DovetailEditor.h"
 #include "WifiModule.h"
-#include "game/Game.h"
-#include "hoist/HoistSystem.h"
+#include "WSCommandHandler.h"
+#include "devices/DeviceManager.h"
+#include "logging/Logger.h"
+#include "logging/Logger.h"
+#include "store/SDLock.h"
 #include "store/Store.h"
-
-String DovetailSystem::getCodeBaseForId(const String &id) {
-    const auto mac = Store::nameToMac[id];
-    const auto codeBase = Store::macToCode[mac];
-    return codeBase;
-}
-
 
 AsyncDNSServer DovetailSystem::dnsServer;
 
 AsyncWebServer DovetailSystem::server = {80};
-AsyncWebSocket ws("/ws");
+std::map<u_int32_t, ClientId> DovetailSystem::registeredMacsToVerify;
+
+void DovetailSystem::verifyDevice(u_int32_t webSocketID, ClientId id) {
+    registeredMacsToVerify[webSocketID] = id;
+}
+
+AsyncWebSocketClient *DovetailSystem::getWSClientByMac(ClientId mac) {
+    AsyncWebSocketClient *client = ws.client(DeviceManager::getInstance().getWSClientByMac(mac));
+    if (client && client->status() == WS_CONNECTED) {
+        return client;
+    }
+    return nullptr;
+}
+
+AsyncWebSocket DovetailSystem::ws("/ws");
+
 
 bool DovetailSystem::connectMode = false;
 
-void DovetailSystem::kickUserWithMac(const String &macToEvict) {
-    wifi_sta_list_t connectedClients;
-    esp_wifi_ap_get_sta_list(&connectedClients);
 
-    for (int i = 0; i < connectedClients.num; i++) {
-        wifi_sta_info_t client = connectedClients.sta[i];
-
-        char currentClientMac[18];
-
-        sprintf(currentClientMac, "%02X:%02X:%02X:%02X:%02X:%02X",
-                client.mac[0], client.mac[1], client.mac[2],
-                client.mac[3], client.mac[4], client.mac[5]);
-
-        uint16_t aidOfClientToKick = 0;
-        if (macToEvict.equalsIgnoreCase(currentClientMac)) {
-            esp_wifi_ap_get_sta_aid(client.mac, &aidOfClientToKick);
-            esp_wifi_deauth_sta(aidOfClientToKick);
-            Serial.printf("🛡️ Sweeper Task: Kicked intruder %s\n", currentClientMac);
-            break;
-        }
-    }
-}
-
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-    auto *info = static_cast<AwsFrameInfo *>(arg);
+void onWebSocketMessage(const uint8_t &wsClientId, const AwsFrameInfo *info, const String &message, size_t len) {
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        data[len] = 0; // Null-terminate incoming character payload
-        String message = reinterpret_cast<char *>(data);
-
-        // ws.textAll("test");
+        JsonDocument doc;
+        DeserializationError err = deserializeJson(doc, message);
+        if (err) {
+            Logger::error("JSON parse failed: " + String(err.c_str()));
+            return;
+        }
+        WSCommandHandler::onIncomingMessage(wsClientId, doc);
     }
 }
 
 
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
-             void *arg, uint8_t *data, size_t len) {
+void onWebSocketEvent(
+    AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+    void *arg, uint8_t *data, size_t len) {
     switch (type) {
-        case WS_EVT_CONNECT:
-            Serial.printf("WebSocket client #%u connected from %s\n", client->id(),
-                          client->remoteIP().toString().c_str());
-            client->text("Welcome Client!");
-            break;
-        case WS_EVT_DISCONNECT:
-            Serial.printf("WebSocket client #%u disconnected\n", client->id());
-            break;
         case WS_EVT_DATA:
-            handleWebSocketMessage(arg, data, len);
+            data[len] = 0; // Null-terminate incoming character payload
+            onWebSocketMessage(client->id(), static_cast<AwsFrameInfo *>(arg), reinterpret_cast<char *>(data), len);
             break;
+        case WS_EVT_CONNECT:
+        case WS_EVT_DISCONNECT:
         case WS_EVT_PONG:
         case WS_EVT_ERROR:
             break;
+        default: break;
+    }
+}
+
+void DovetailSystem::notFound404(AsyncWebServerRequest *request) {
+    Logger::log("Incoming request for: " + request->url());
+    request->send(404, "text/plain", "Not found");
+}
+
+void DovetailSystem::code(AsyncWebServerRequest *request) {
+    if (!request->hasParam("mac")) {
+        request->send(500, "text/plain", "Mac address not provided!");
+        return;
+    }
+    const auto mac = WifiModule::parsePrettyMac(request->getParam("mac")->value());
+    const auto scriptFile = DeviceManager::getInstance().getScriptFilePathByMac(mac);
+
+    SDLock lock;
+    request->send(SD, scriptFile, "text/plain");
+}
+
+void DovetailSystem::defineRoutes() {
+    server.on("/code", HTTP_GET, code);
+    server.onNotFound(notFound404);
+}
+
+void DovetailSystem::macVerificationLoop() {
+    while (!registeredMacsToVerify.empty()) {
+        auto &[clientId,mac] = *registeredMacsToVerify.begin();
+        JsonDocument doc;
+        const auto isAllowedOnNetwork = DeviceManager::getInstance().canJoinNetwork(mac);
+
+        doc["command"] = isAllowedOnNetwork ? "register_success" : "register_failure";
+        Logger::log(
+            String("Mac: ") +
+            WifiModule::macToString(mac).c_str() +
+            (isAllowedOnNetwork
+                 ? " is on the allowlist!"
+                 : " was kicked off since they are not on the allowlist!"
+            ));
+
+
+        String messageContentToSend;
+        serializeJson(doc, messageContentToSend);
+
+        if (AsyncWebSocketClient *client = ws.client(clientId); client && client->status() == WS_CONNECTED)
+            client->text(messageContentToSend);
+        if (isAllowedOnNetwork)
+            DeviceManager::getInstance().registerDevice(mac, clientId);
+        registeredMacsToVerify.erase(registeredMacsToVerify.begin());
     }
 }
 
 
-void DovetailSystem::defineRoutes() {
-    server.on("/code", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (!request->hasParam("mac")) {
-            request->send(500, "text/plain", "Mac address not provided!");
-
-            return;
-        }
-
-
-        const auto path = Store::getScriptFilePathByMac(request->getParam("mac")->value());
-
-        if (SD.exists(path)) {
-            // Send the file. "text/plain" is usually best for code/scripts
-            request->send(SD, path, "text/plain");
-        } else {
-            // Fallback if the file hasn't been created yet
-            request->send(404, "text/plain", "File not found on SD card!");
-        }
-    });
-}
-
-void DovetailSystem::connectionLoop() {
-    /**
-     * Hey buddy. U refactored and changed a lot of shit and forgot u did so. this is part of it. please remember that this used to be the logic that kicked users off the network when they joined.
-     * You decided that you want to change that, and kick later.
-     */
-    // const auto ip = request->client()->remoteIP();
-    // macToIp[mac] = request->client()->remoteIP();
-    // Serial.println("Registered mac to ip");
-    // if (!macToCode.count(mac)) {
-    //     auto device = HoistSystem::currentHoistInDeployment.devices[HoistSystem::deviceIndex];
-    //     macToCode[mac] = HoistSystem::inSetup ? device.file : "waterslide.ezra";
-    //     macToName[mac] = HoistSystem::inSetup ? device.deviceId : mac;
-    //     nameToMac[HoistSystem::inSetup ? device.deviceId : mac] = mac;
-    //     needsSave = true;
-    //     if (HoistSystem::status != 0) {
-    //         HoistSystem::status = 2;
-    //     }
-    // }
-    //
-    // if (HoistSystem::inSetup) {
-    //     Store::allowedMacs.insert(macStr);
-    //     Store::saveToMacList();
-    //     HoistSystem::status = 1;
-    //     updateDeviceCount();
-    //     break;
-    // }
-    //
-    // if (!connectMode) {
-    //     Serial.println("This client is not associated with this device!");
-    //     kickUserWithMac(TODO);
-    //     break;
-    // }
-}
-
 void DovetailSystem::init() {
     defineRoutes();
+    WSCommandHandler::registerAllInternalCommands();
+    ws.onEvent(onWebSocketEvent);
+
     DovetailEditor::initEditorRoutes();
     WifiModule::startWifi();
 }
 
 void DovetailSystem::resetAllDevices() {
-    for (auto &name_to_mac: Store::nameToMac) {
-        // sendMessage(name_to_mac.second, "reset");
+    for (auto &[mac,_]: DeviceManager::getInstance().getConnectedDevices()) {
+        WSCommandHandler::sendCommand(mac, "script", [](auto _) {
+        });
     }
 }
 
