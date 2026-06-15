@@ -5,6 +5,7 @@
 #include "HoistingProcess.h"
 #include "lvgl.h"
 #include "lv_api_map_v8.h"
+#include "devices/DeviceManager.h"
 #include "dovetail/DovetailSystem.h"
 #include "logging/Logger.h"
 #include "store/Store.h"
@@ -16,12 +17,22 @@
 #include "widgets/slider/lv_slider_private.h"
 #include "widgets/slider/lv_slider.h"
 
-void HoistingProcess::onNewClientConnected() {
+void HoistingProcess::onDeviceRegistration() {
+    lv_slider_set_value(ui_PairingProgress, 2,LV_ANIM_ON);
+    if (isLastDevice()) {
+        onEndOfDeployment();
+        return;
+    }
+    currentDeviceIndex++;
+    startNext();
+}
+
+void HoistingProcess::onDeviceConnect() {
     lv_slider_set_value(ui_PairingProgress, 1,LV_ANIM_ON);
 }
 
 bool HoistingProcess::isLastDevice() const {
-    return currentDeviceIndex + 1 >= hoist.devices.size();
+    return currentDeviceIndex + 1 >= hoist->devices.size();
 }
 
 
@@ -29,28 +40,23 @@ void HoistingProcess::onEndOfDeployment() {
     Logger::log("Successfully deployed system!");
     lv_disp_load_scr(ui_DeploySuccess);
     DovetailSystem::resetAllDevices();
+    xSemaphoreGive(HoistSystem::getInstance().cleanupSemaphore);
 }
 
-void HoistingProcess::onClientRegistration() {
-    lv_slider_set_value(ui_PairingProgress, 2,LV_ANIM_ON);
-    if (isLastDevice()) {
-        onEndOfDeployment();
-        return;
-    }
 
-    currentDeviceIndex++;
-    startNext();
+String HoistingProcess::assignedFileForNewDevice() {
+    return getCurrentDevice().file;
 }
 
 
 ClientConfig HoistingProcess::getCurrentDevice() {
-    return hoist.devices[currentDeviceIndex];
+    return hoist->devices[currentDeviceIndex];
 }
 
 
 void HoistingProcess::matchRollerToDevices() const {
     String options = "";
-    for (auto &device: hoist.devices) {
+    for (auto &device: hoist->devices) {
         options += "\n"; //We anyway want the first element to be blank.
         options += device.ClientId;
     }
@@ -59,7 +65,12 @@ void HoistingProcess::matchRollerToDevices() const {
 
 void HoistingProcess::startNext() {
     matchScreenToCurrentDevice();
+    updatePairedCountLabel();
+}
 
+void HoistingProcess::updatePairedCountLabel() const {
+    auto pairedDeviceCount = hoist->id + " - " + String(currentDeviceIndex + 1) + " / " + String(hoist->devices.size());
+    lv_label_set_text(ui_PairedDeviceCount, pairedDeviceCount.c_str());
 }
 
 void HoistingProcess::matchScreenToCurrentDevice() {
@@ -67,9 +78,16 @@ void HoistingProcess::matchScreenToCurrentDevice() {
     lv_slider_set_value(ui_PairingProgress, 0,LV_ANIM_ON);
 
     lv_roller_set_selected(ui_DevicesToPair, currentDeviceIndex + 1,LV_ANIM_ON);
-    auto pairedDeviceCount = hoist.id + " - " + String(currentDeviceIndex + 1) + " / " + String(hoist.devices.size());
-    lv_label_set_text(ui_PairedDeviceCount, pairedDeviceCount.c_str());
+
 
 
     lv_label_set_text(ui_Label11, currentDevice.description.c_str());
+}
+
+
+HoistingProcess::HoistingProcess(const std::shared_ptr<Hoist> &hoist) {
+    this->hoist = hoist;
+    matchRollerToDevices();
+    matchScreenToCurrentDevice();
+    updatePairedCountLabel();
 }

@@ -27,7 +27,7 @@ void onResetButton(lv_event_t *e) {
 }
 
 void onDeploy(lv_event_t *e) {
-    HoistSystem::startDeploymentWithSelected();
+    HoistSystem::getInstance().startDeploymentWithSelected();
 }
 
 void validateSudoCode(lv_event_t *e) {
@@ -71,7 +71,7 @@ void setup() {
 
     const auto ssid = "SSID: " + WifiModule::ssid;
     lv_label_set_text(ui_SSID, ssid.c_str());
-    HoistSystem::initHoists();
+    HoistSystem::getInstance().initHoistSystem();
 
     Logger::log("Setup done");
 }
@@ -84,7 +84,6 @@ void loop() {
     Game::setCurrentScreen();
     DovetailSystem::macVerificationLoop();
     Game::updateValues();
-    HoistSystem::hoistLoop();
     WifiModule::updateDeviceCount();
     DovetailSystem::ws.cleanupClients();
     if (Game::shouldEndActivity) {

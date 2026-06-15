@@ -9,6 +9,7 @@
 #include "ClientId.h"
 #include "dovetail/DovetailSystem.h"
 #include "dovetail/WifiModule.h"
+#include "hoist/HoistSystem.h"
 #include "logging/Logger.h"
 
 void DeviceManager::clearDeviceCache() {
@@ -71,11 +72,20 @@ String DeviceManager::getCodeBaseForId(const String &id) {
 String DeviceManager::getScriptFilePathByMac(const ClientId &mac) {
     auto assignedScriptToMac = macToCode.find(mac);
     auto macHasAssignedCodebase = assignedScriptToMac != macToCode.end();
-    return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "waterslide.ezra");
+    if (HoistSystem::getInstance().isHoisting())
+        return String("/scripts/") + HoistSystem::getInstance().assignedFileForNewDevice();
+    return String("/scripts/") + (macHasAssignedCodebase ? assignedScriptToMac->second : "default.ezra");
 }
 
-bool DeviceManager::canJoinNetwork(ClientId id) {
+void DeviceManager::onDeviceConnect() {
+    HoistSystem::getInstance().onDeviceConnect();
+}
+
+
+bool DeviceManager::onDeviceRegistration(const ClientId id) {
     if (macToCode.find(id) != macToCode.end())
+        return true;
+    if (HoistSystem::getInstance().onDeviceRegistration())
         return true;
     //We may need to add another function to verify the entire process rather then just check if they are allowed.
     if (DovetailSystem::connectMode)

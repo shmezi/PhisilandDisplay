@@ -17,5 +17,5 @@ String RegisterCommand::name() {
 void RegisterCommand::execute(const uint8_t &wsClientID, JsonDocument doc) {
     const auto mac = String(doc["mac"]);
     Logger::log("Mac attempted to register: " + mac);
-    DovetailSystem::verifyDevice(wsClientID, WifiModule::parsePrettyMac(mac));
+    DovetailSystem::verifyDevice(WifiModule::parsePrettyMac(mac), wsClientID);
 }

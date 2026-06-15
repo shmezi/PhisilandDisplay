@@ -56,7 +56,10 @@ public:
 
     String getScriptFilePathByMac(const ClientId &mac);
 
-    bool canJoinNetwork(ClientId id);
+    void onDeviceConnect();
+
+
+    bool onDeviceRegistration(ClientId id);
 
     bool isRegistered(ClientId id) const;
 

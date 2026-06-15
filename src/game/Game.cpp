@@ -75,7 +75,7 @@ void Game::updateValues() {
 
 void Game::setCurrentScreen() {
     if (!shouldSwitchScreen) return;
-
+    if (HoistSystem::getInstance().isHoisting())return;
     // if (HoistSystem::inSetup) { TODO: Add back logic for deployment
     //     Serial.println("Not switching screen due to deployment that is in process");
     //     return;

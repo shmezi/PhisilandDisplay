@@ -152,7 +152,7 @@ void Store::loadHoists() {
         }
         const auto hoist = loadHoistFromDocument(hoistDocument);
 
-        HoistSystem::hoists[hoist.id] = hoist;
+        HoistSystem::getInstance().loadHoist(hoist);
 
 
         hoistFile = hoistsDirectory.openNextFile();

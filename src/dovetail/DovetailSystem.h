@@ -24,11 +24,13 @@ public:
     static AsyncDNSServer dnsServer;
     static AsyncWebServer server;
 
-    static void verifyDevice(u_int32_t webSocketID, ClientId id);
+    static void verifyDevice(ClientId id, u_int32_t webSocketID);
+
+    static bool isDeviceAwaitingRegistration(ClientId id);
 
     static AsyncWebSocketClient *getWSClientByMac(ClientId);
 
-    static std::map<u_int32_t, ClientId> registeredMacsToVerify;
+    static std::map<ClientId,u_int32_t> registeredMacsToVerify;
 
 
     static AsyncWebSocket ws;

@@ -22,13 +22,18 @@
 AsyncDNSServer DovetailSystem::dnsServer;
 
 AsyncWebServer DovetailSystem::server = {80};
-std::map<u_int32_t, ClientId> DovetailSystem::registeredMacsToVerify;
+std::map<ClientId, u_int32_t> DovetailSystem::registeredMacsToVerify;
 
-void DovetailSystem::verifyDevice(u_int32_t webSocketID, ClientId id) {
-    registeredMacsToVerify[webSocketID] = id;
+void DovetailSystem::verifyDevice(const ClientId id, const u_int32_t webSocketID) {
+    registeredMacsToVerify[id] = webSocketID;
+    DeviceManager::getInstance().onDeviceConnect();
 }
 
-AsyncWebSocketClient *DovetailSystem::getWSClientByMac(ClientId mac) {
+bool DovetailSystem::isDeviceAwaitingRegistration(const ClientId id) {
+    return registeredMacsToVerify[id];
+}
+
+AsyncWebSocketClient *DovetailSystem::getWSClientByMac(const ClientId mac) {
     AsyncWebSocketClient *client = ws.client(DeviceManager::getInstance().getWSClientByMac(mac));
     if (client && client->status() == WS_CONNECTED) {
         return client;
@@ -96,9 +101,9 @@ void DovetailSystem::defineRoutes() {
 
 void DovetailSystem::macVerificationLoop() {
     while (!registeredMacsToVerify.empty()) {
-        auto &[clientId,mac] = *registeredMacsToVerify.begin();
+        auto &[mac,clientId] = *registeredMacsToVerify.begin();
         JsonDocument doc;
-        const auto isAllowedOnNetwork = DeviceManager::getInstance().canJoinNetwork(mac);
+        const auto isAllowedOnNetwork = DeviceManager::getInstance().onDeviceRegistration(mac);
 
         doc["command"] = isAllowedOnNetwork ? "register_success" : "register_failure";
         Logger::log(
@@ -108,6 +113,8 @@ void DovetailSystem::macVerificationLoop() {
                  ? " is on the allowlist!"
                  : " was kicked off since they are not on the allowlist!"
             ));
+        if (isAllowedOnNetwork)
+            HoistSystem::getInstance().onDeviceRegistration();
 
 
         String messageContentToSend;

@@ -18,10 +18,18 @@
 
 #include "widgets/roller/lv_roller.h"
 #include "widgets/slider/lv_slider_private.h"
-std::map<String, Hoist> HoistSystem::hoists{};
+
+void HoistSystem::onDeviceConnect() {
+    if (process)
+        process->onDeviceConnect();
+}
+
+void HoistSystem::killProcess() {
+    process = nullptr;
+}
 
 
-void HoistSystem::initHoists() {
+void HoistSystem::initHoistSystem() {
     Store::loadHoists();
     lv_roller_set_options(
         ui_FileSelector,
@@ -29,32 +37,74 @@ void HoistSystem::initHoists() {
         LV_ROLLER_MODE_INFINITE);
 }
 
-void HoistSystem::startDeployment() {
+bool HoistSystem::isHoisting() const {
+    return process != nullptr;
+}
+
+String HoistSystem::assignedFileForNewDevice() const {
+    if (process)
+        return process->assignedFileForNewDevice();
+    return "error.ezra";
 }
 
 
-void HoistSystem::hoistLoop() {
-
+bool HoistSystem::onDeviceRegistration() const {
+    if (process != nullptr) {
+        process->onDeviceRegistration();
+        return true;
+    }
+    return false;
 }
 
 
-void HoistSystem::registeredClient() {
-
+void HoistSystem::loadHoist(const Hoist &hoist) {
+    hoists[hoist.id] = std::make_shared<Hoist>(hoist);
 }
 
+std::shared_ptr<Hoist> HoistSystem::getHoistById(const String &id) {
+    return hoists[id];
+}
+
+void HoistSystem::startDeployment(const String &hoist) {
+    process = std::make_shared<HoistingProcess>(getHoistById(hoist));
+}
+
+bool HoistSystem::hasFinishedDeployment() {
+    return xSemaphoreTake(HoistSystem::getInstance().cleanupSemaphore, portMAX_DELAY) == pdTRUE;
+}
+
+
+void hoistVerifyEnd(void *pvParameters) {
+    while (true) {
+        // Task sleeps here until the semaphore is given
+        if (HoistSystem::getInstance().hasFinishedDeployment()) {
+            vTaskDelay(pdMS_TO_TICKS(5000)); //Delay to make sure devices are reset!
+            if (HoistSystem::getInstance().isHoisting()) {
+                HoistSystem::getInstance().killProcess();
+            }
+            vTaskDelete(nullptr);
+        }
+    }
+}
 
 void HoistSystem::startDeploymentWithSelected() {
     WifiModule::resetWifi();
 
     char selected[32];
     lv_roller_get_selected_str(ui_FileSelector, selected, sizeof(selected));
-
+    xTaskCreatePinnedToCore(
+        hoistVerifyEnd,
+        "DeployTask",
+        4096,
+        nullptr,
+        3,
+        NULL,
+        1
+    );
     Store::resetRegistry();
 
 
-    // currentHoistInDeployment = hoists[selected];
-
-    startDeployment();
+    startDeployment(selected);
     lv_disp_load_scr(ui_HoistSystem);
     // inSetup = true;
 }

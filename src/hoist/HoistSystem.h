@@ -6,50 +6,63 @@
 #define PHISILANDDISPLAY_HOISTSYSTEM_H
 
 #include <map>
+#include <memory>
 #include <vector>
 #include <WString.h>
 
-/*
- * Configuration for an individual config.
- */
-struct ClientConfig {
-    String ClientId;
-    String description;
-    String file;
-};
+#include "HoistingProcess.h"
+#include "dovetail/WSCommandHandler.h"
 
-/**
- * Configuration for a hoist that can be deployed.
- */
-struct Hoist {
-    String id;
-    String description;
-    std::vector<ClientConfig> devices;
-};
-
-enum HoistStatus {
-    NONCONNECTED,
-    CONNECTED,
-    REGISTERED
-};
 
 class HoistSystem {
+    std::map<String, std::shared_ptr<Hoist> > hoists;
+
+    std::shared_ptr<HoistingProcess> process;
+
+    void startDeployment(const String &hoist);
+
+
+    HoistSystem() {
+        cleanupSemaphore = xSemaphoreCreateBinary();
+        hoists = {};
+        process = nullptr;
+    }
+
+    ~HoistSystem() {
+    }
+
 public:
-    static std::map<String, Hoist> hoists;
-    static int deviceIndex;
+    SemaphoreHandle_t cleanupSemaphore;
 
-    static void initHoists();
+    bool hasFinishedDeployment();
 
-    static void startDeployment();
+    HoistSystem(const HoistSystem &) = delete;
 
-    static HoistStatus status;
+    HoistSystem &operator=(const HoistSystem &) = delete;
 
-    static void hoistLoop();
+    void onDeviceConnect();
 
-    static void registeredClient();
+    void killProcess();
 
-    static void startDeploymentWithSelected();
+    static HoistSystem &getInstance() {
+        static HoistSystem instance;
+        return instance;
+    }
 
+    void initHoistSystem();
+
+    bool isHoisting() const;
+
+    String assignedFileForNewDevice() const;
+
+    bool onDeviceRegistration() const;
+
+
+    void loadHoist(const Hoist &hoist);
+
+    std::shared_ptr<Hoist> getHoistById(const String &id);
+
+    void startDeploymentWithSelected();
 };
 
 

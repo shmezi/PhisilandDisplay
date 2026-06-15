@@ -4,24 +4,22 @@
 
 #ifndef PHISILANDDISPLAY_HOISTINGPROCESS_H
 #define PHISILANDDISPLAY_HOISTINGPROCESS_H
-#include "HoistSystem.h"
+#include <memory>
 
+#include "HoistStructures.h"
+
+
+struct Hoist;
 
 class HoistingProcess {
-    Hoist hoist;
+    std::shared_ptr<Hoist> hoist;
     int currentDeviceIndex = 0;
 
-    HoistingProcess(const Hoist &hoist) {
-        this->hoist = hoist;
-    }
-
-    void onNewClientConnected();
 
     bool isLastDevice() const;
 
     void onEndOfDeployment();
 
-    void onClientRegistration();
 
     ClientConfig getCurrentDevice();
 
@@ -29,7 +27,19 @@ class HoistingProcess {
 
     void startNext();
 
+    void updatePairedCountLabel() const;
+
     void matchScreenToCurrentDevice();
+
+public:
+    void onDeviceRegistration();
+
+    void onDeviceConnect();
+
+
+    String assignedFileForNewDevice();
+
+    explicit HoistingProcess(const std::shared_ptr<Hoist> &hoist);
 };
 
 
