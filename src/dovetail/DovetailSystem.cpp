@@ -113,15 +113,19 @@ void DovetailSystem::macVerificationLoop() {
                  ? " is on the allowlist!"
                  : " was kicked off since they are not on the allowlist!"
             ));
+        if (isAllowedOnNetwork)
+            DeviceManager::getInstance().registerDevice(mac, clientId);
+
+
+        HoistSystem::getInstance().onDeviceRegistration(mac);
 
 
         String messageContentToSend;
         serializeJson(doc, messageContentToSend);
 
-        if (AsyncWebSocketClient *client = ws.client(clientId); client && client->status() == WS_CONNECTED)
+        if (const auto client = getWSClientByMac(mac); client != nullptr)
             client->text(messageContentToSend);
-        if (isAllowedOnNetwork)
-            DeviceManager::getInstance().registerDevice(mac, clientId);
+
         registeredMacsToVerify.erase(registeredMacsToVerify.begin());
     }
 }
@@ -137,7 +141,13 @@ void DovetailSystem::init() {
 }
 
 void DovetailSystem::resetAllDevices() {
-    for (auto &[mac,_]: DeviceManager::getInstance().getConnectedDevices()) {
+    std::vector<ClientId> macs;
+    Logger::log("Resting for " + String(DeviceManager::getInstance().getConnectedDevices().size()) + " Devices");
+    for (auto &[mac, _]: DeviceManager::getInstance().getConnectedDevices()) {
+        macs.push_back(mac);
+    }
+    for (const auto &mac: macs) {
+        Logger::log(("Resetting for mac" + WifiModule::macToString(mac)).data());
         WSCommandHandler::sendCommand(mac, "script", [](auto _) {
         });
     }

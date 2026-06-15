@@ -66,7 +66,10 @@ void setup() {
     const auto codeBaseNameWithExtension = DeviceManager::getInstance().getCodeBaseForId("core");
     const auto codeBaseName = codeBaseNameWithExtension.substring(0, codeBaseNameWithExtension.length() - 5);
 
-    lv_label_set_text(ui_ClientId, ("Connecting to: " + codeBaseName).c_str());
+    lv_label_set_text(ui_ClientId, (
+                          codeBaseName.length() == 0
+                              ? "Please deploy using hoist!"
+                              : "Connecting to: " + codeBaseName).c_str());
 
 
     const auto ssid = "SSID: " + WifiModule::ssid;

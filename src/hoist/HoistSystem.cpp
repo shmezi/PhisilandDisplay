@@ -48,12 +48,11 @@ String HoistSystem::assignedFileForNewDevice() const {
 }
 
 
-bool HoistSystem::onDeviceRegistration(const ClientId &id) const {
+void HoistSystem::onDeviceRegistration(const ClientId &id) const {
     if (process != nullptr) {
         process->onDeviceRegistration(id);
-        return true;
     }
-    return false;
+
 }
 
 

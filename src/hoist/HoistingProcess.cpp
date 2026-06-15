@@ -43,7 +43,6 @@ bool HoistingProcess::isLastDevice() const {
 void HoistingProcess::onEndOfDeployment() {
     Logger::log("Successfully deployed system!");
     lv_disp_load_scr(ui_DeploySuccess);
-    vTaskDelay(pdMS_TO_TICKS(3000));
     DovetailSystem::resetAllDevices();
     xSemaphoreGive(HoistSystem::getInstance().cleanupSemaphore);
 }

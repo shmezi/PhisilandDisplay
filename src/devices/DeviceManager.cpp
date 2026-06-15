@@ -16,6 +16,8 @@ void DeviceManager::clearDeviceCache() {
     macToCode.clear();
     nameToMac.clear();
     macToName.clear();
+    //Maybe also burn all these clients ?
+    registeredDeviceMacToClientId.clear();
 }
 
 JsonDocument DeviceManager::serializeDevicesToJson() {
@@ -85,7 +87,7 @@ void DeviceManager::onDeviceConnect() {
 bool DeviceManager::onDeviceRegistration(const ClientId id) {
     if (macToCode.find(id) != macToCode.end())
         return true;
-    if (HoistSystem::getInstance().onDeviceRegistration(id))
+    if (HoistSystem::getInstance().isHoisting())
         return true;
     //We may need to add another function to verify the entire process rather then just check if they are allowed.
     if (DovetailSystem::connectMode)
@@ -129,5 +131,6 @@ u_int32_t DeviceManager::getWSClientByMac(const ClientId id) {
 }
 
 void DeviceManager::registerDevice(const ClientId id, uint32_t wsClientId) {
+    Logger::log((WifiModule::macToString(id) + " is now registered!").data());
     registeredDeviceMacToClientId[id] = wsClientId;
 }

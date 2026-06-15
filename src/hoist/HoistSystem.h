@@ -55,7 +55,7 @@ public:
 
     String assignedFileForNewDevice() const;
 
-    bool onDeviceRegistration(const ClientId &id) const;
+    void onDeviceRegistration(const ClientId &id) const;
 
 
     void loadHoist(const Hoist &hoist);
