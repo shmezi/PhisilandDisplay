@@ -191,8 +191,8 @@ void Store::loadRegistryFromSD() {
 
 void Store::ensureDeleted(const String &name) {
     SDLock lock;
-    if (SD.exists(name)) {
-        SD.remove(name);
+    if (SD.exists("/" + name)) {
+        SD.remove("/" + name);
     }
 }
 

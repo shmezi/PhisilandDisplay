@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "HoistStructures.h"
+#include "devices/ClientId.h"
 
 
 struct Hoist;
@@ -32,7 +33,7 @@ class HoistingProcess {
     void matchScreenToCurrentDevice();
 
 public:
-    void onDeviceRegistration();
+    void onDeviceRegistration(const ClientId &id);
 
     void onDeviceConnect();
 

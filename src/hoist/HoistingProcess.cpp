@@ -17,7 +17,11 @@
 #include "widgets/slider/lv_slider_private.h"
 #include "widgets/slider/lv_slider.h"
 
-void HoistingProcess::onDeviceRegistration() {
+void HoistingProcess::onDeviceRegistration(const ClientId &id) {
+    auto current = getCurrentDevice();
+
+    DeviceManager::getInstance().addDevice(id, current.ClientId, current.file);
+    xSemaphoreGive(Store::needsSave);
     lv_slider_set_value(ui_PairingProgress, 2,LV_ANIM_ON);
     if (isLastDevice()) {
         onEndOfDeployment();
@@ -39,6 +43,7 @@ bool HoistingProcess::isLastDevice() const {
 void HoistingProcess::onEndOfDeployment() {
     Logger::log("Successfully deployed system!");
     lv_disp_load_scr(ui_DeploySuccess);
+    vTaskDelay(pdMS_TO_TICKS(3000));
     DovetailSystem::resetAllDevices();
     xSemaphoreGive(HoistSystem::getInstance().cleanupSemaphore);
 }
@@ -78,7 +83,6 @@ void HoistingProcess::matchScreenToCurrentDevice() {
     lv_slider_set_value(ui_PairingProgress, 0,LV_ANIM_ON);
 
     lv_roller_set_selected(ui_DevicesToPair, currentDeviceIndex + 1,LV_ANIM_ON);
-
 
 
     lv_label_set_text(ui_Label11, currentDevice.description.c_str());

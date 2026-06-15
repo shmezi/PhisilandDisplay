@@ -146,19 +146,22 @@ ClientId WifiModule::parsePrettyMac(const String &macStr) {
            &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
     return mac;
 }
-
 void WifiModule::resetWifi() {
+    // Disconnect all clients and stop AP radio
+    WiFi.softAPdisconnect(true);
+    delay(100);
+
+    // Regenerate the name
     Store::ensureDeleted("wifi-name.txt");
     initWifiName();
 
-    WiFiClass::mode(WIFI_OFF);
+    // Restart AP with new SSID (server stays running)
+    WiFi.softAP(ssid, password, 1, 0, 5);
 
-    WiFi.softAP(ssid, password);
+    wifi_config_t conf;
+    esp_wifi_get_config(WIFI_IF_AP, &conf);
+    conf.ap.pairwise_cipher = WIFI_CIPHER_TYPE_CCMP;
+    esp_wifi_set_config(WIFI_IF_AP, &conf);
 
     WiFi.setSleep(false);
-    // WiFi.onEvent(wifiEvent);
-
-    DovetailSystem::dnsServer.stop();
-    DovetailSystem::server.end();
-    startWifi();
 }

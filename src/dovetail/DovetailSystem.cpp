@@ -113,8 +113,6 @@ void DovetailSystem::macVerificationLoop() {
                  ? " is on the allowlist!"
                  : " was kicked off since they are not on the allowlist!"
             ));
-        if (isAllowedOnNetwork)
-            HoistSystem::getInstance().onDeviceRegistration();
 
 
         String messageContentToSend;

@@ -48,9 +48,9 @@ String HoistSystem::assignedFileForNewDevice() const {
 }
 
 
-bool HoistSystem::onDeviceRegistration() const {
+bool HoistSystem::onDeviceRegistration(const ClientId &id) const {
     if (process != nullptr) {
-        process->onDeviceRegistration();
+        process->onDeviceRegistration(id);
         return true;
     }
     return false;
@@ -89,7 +89,7 @@ void hoistVerifyEnd(void *pvParameters) {
 
 void HoistSystem::startDeploymentWithSelected() {
     WifiModule::resetWifi();
-
+    Store::resetRegistry();
     char selected[32];
     lv_roller_get_selected_str(ui_FileSelector, selected, sizeof(selected));
     xTaskCreatePinnedToCore(
@@ -101,7 +101,6 @@ void HoistSystem::startDeploymentWithSelected() {
         NULL,
         1
     );
-    Store::resetRegistry();
 
 
     startDeployment(selected);

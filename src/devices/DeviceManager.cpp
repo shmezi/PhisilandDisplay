@@ -85,7 +85,7 @@ void DeviceManager::onDeviceConnect() {
 bool DeviceManager::onDeviceRegistration(const ClientId id) {
     if (macToCode.find(id) != macToCode.end())
         return true;
-    if (HoistSystem::getInstance().onDeviceRegistration())
+    if (HoistSystem::getInstance().onDeviceRegistration(id))
         return true;
     //We may need to add another function to verify the entire process rather then just check if they are allowed.
     if (DovetailSystem::connectMode)
